@@ -68,7 +68,7 @@ function create(text: string, onIndex?: (index: number) => string) {
     if (!match("#")) {
         throw "No root id defined.";
     }
-    root = document.querySelector(nested.shift()) as HTMLElement;
+    root = document.getElementById(nested.shift()) as HTMLElement;
     if(!root)
         throw `Root ${nested[0]} doesn't exist`;
     nested.shift(); //consume > todo: should be tested.
