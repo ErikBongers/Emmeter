@@ -3,25 +3,26 @@ export const NBSP = 160;
 
 export let emmet = {
     create,
-    append
+    append,
+    testEmmet //todo: this should only be exported to test.ts
 };
 
-interface AttDef {
+export interface AttDef {
     name: string,
     sub: string,
     value: string
 }
 
-interface GroupDef {
+export interface GroupDef {
     count: number,
     child: Node
 }
 
-interface ListDef {
+export interface ListDef {
     list: Node[];
 }
 
-interface ElementDef {
+export interface ElementDef {
     tag: string,
     id: string,
     atts: AttDef[]
@@ -30,15 +31,15 @@ interface ElementDef {
     child: Node
 }
 
-interface TextDef {
+export interface TextDef {
     text: string
 }
 
-type Node = GroupDef | ElementDef | ListDef | TextDef;
+export type Node = GroupDef | ElementDef | ListDef | TextDef;
 
 let nested: string[] = undefined;
 let lastCreated: HTMLElement = undefined;
-let globalStringCache: string[] = [];
+export let globalStringCache: string[] = [];
 
 // noinspection RegExpRedundantEscape
 let reSplit = /([>\(\)\+\*#\.\[\]\{\}])/;
@@ -70,19 +71,27 @@ function create(text: string, onIndex?: (index: number) => string) {
     if(!root)
         throw `Root ${nested[0]} doesn't exist`;
     nested.shift(); //consume > todo: should be tested.
-    return parse(root, onIndex);
+    return parseAndBuild(root, onIndex);
 }
 
 function append(root: HTMLElement, text: string, onIndex?: (index: number) => string) {
     globalStringCache = prepareNested(text);
-    return parse(root, onIndex);
+    return parseAndBuild(root, onIndex);
 }
 
-function parse(root: HTMLElement, onIndex: (index: number) => string) {
-    nested = nested.filter(token => token);
-    let rootDef = parsePlus() ;
-    buildElement(root, rootDef, 1, onIndex);
+function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string) {
+    buildElement(root, parse(), 1, onIndex);
     return {root, last: lastCreated};
+}
+
+function testEmmet(text: string): Node {
+    globalStringCache = prepareNested(text);
+    return parse();
+}
+
+function parse() {
+    nested = nested.filter(token => token);
+    return parsePlus() ;
 }
 
 //parse a+b+c>d...
@@ -121,14 +130,12 @@ function parseElement(): Node {
         el = parsePlus();
         let _closingBrace = nested.shift(); //todo: test!
         return el;
+    } else if(match('{')) {
+        let text = getText();
+        return <TextDef>{text};
     } else {
         return parseChildDef();
     }
-}
-
-// parse a>b...  or a+b+c>d...
-function parseText(): Node {
-    return parsePlus();
 }
 
 
@@ -139,6 +146,7 @@ function parseChildDef(): ElementDef {
     let classList: string[] = [];
     let text = "";
 
+    breakWhile:
     while(nested.length) {
         let token = nested.shift();
         switch(token) {
@@ -155,8 +163,8 @@ function parseChildDef(): ElementDef {
                 text = getText();
                 break;
             default:
-                nested.unshift();
-                break;
+                nested.unshift(token);
+                break breakWhile;
         }
     }
     return {tag, id, atts, classList, innerText: text, child: parseDown()};
