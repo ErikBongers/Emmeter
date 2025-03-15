@@ -292,6 +292,11 @@ function buildElement(parent: HTMLElement, el: Node, index: number, onIndex: (in
             buildElement(parent, el.child, i, onIndex);
         }
     }
+    if("text" in el) { //TextDef
+        let str = globalStringCache[parseInt(el.text)];
+        parent.appendChild(document.createTextNode(addIndex(str, index, onIndex)));
+        return;
+    }
 }
 
 function addIndex(text: string, index: number, onIndex: (index: number) => string) {
