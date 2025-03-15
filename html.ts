@@ -58,13 +58,13 @@ function prepareNested(text: string) {
         text = text.replace("{"+str+"}", "{"+index+"}");
     }
     nested = text.split(reSplit);
+    nested = nested.filter(token => token);
     return stringCache;
 }
 
 function create(text: string, onIndex?: (index: number) => string) {
     let root: HTMLElement = undefined;
     globalStringCache = prepareNested(text);
-    nested = nested.filter(token => token);
     if (!match("#")) {
         throw "No root id defined.";
     }
