@@ -4,6 +4,7 @@ export const NBSP = 160;
 export let emmet = {
     create,
     append,
+    insertBefore,
     testEmmet //todo: this should only be exported to test.ts
 };
 
@@ -78,6 +79,16 @@ function create(text: string, onIndex?: (index: number) => string) {
 function append(root: HTMLElement, text: string, onIndex?: (index: number) => string) {
     globalStringCache = prepareNested(text);
     return parseAndBuild(root, onIndex);
+}
+
+function insertBefore(root: HTMLElement, text: string, onIndex?: (index: number) => string) {
+    globalStringCache = prepareNested(text);
+    let tempRoot = document.createElement("div");
+    let result = parseAndBuild(tempRoot, onIndex);
+    for(let child of tempRoot.children) {
+        root.parentElement.insertBefore(child, root);
+    }
+    return {root, last: result.last};
 }
 
 function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string) {
