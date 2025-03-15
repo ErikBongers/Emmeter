@@ -64,7 +64,8 @@ function prepareNested(text: string) {
 function create(text: string, onIndex?: (index: number) => string) {
     let root: HTMLElement = undefined;
     globalStringCache = prepareNested(text);
-    if (nested[0][0] !== "#") {
+    nested = nested.filter(token => token);
+    if (!match("#")) {
         throw "No root id defined.";
     }
     root = document.querySelector(nested.shift()) as HTMLElement;
@@ -90,7 +91,6 @@ function testEmmet(text: string): Node {
 }
 
 function parse() {
-    nested = nested.filter(token => token);
     return parsePlus() ;
 }
 
