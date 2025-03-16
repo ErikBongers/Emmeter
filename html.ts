@@ -58,10 +58,9 @@ function replaceStringsByPlaceholders(stringCache: string[], text: string, regex
     let matches = text.matchAll(regex);
     if(matches) {
         for(let match of matches){
-            text = text.replace(match[0], leftDelim+stringCache.length+rightDelim);
+            text = text.replace(match[0], leftDelim+stringCache.length+rightDelim); //todo: only replace the first match?
             stringCache.push(unescape(match[1]));
         }
-        stringCache = [...new Set(stringCache)];
     }
     return {text, stringCache};
 }
