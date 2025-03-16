@@ -1,4 +1,4 @@
-import {ElementDef, emmet, globalStringCache, Node} from "./html";
+import {ElementDef, emmet, Node} from "./html";
 
 export function testIt(text: string) {
     let result = emmet.testEmmet(text);
@@ -36,7 +36,7 @@ function print(node: Node) {
         return;
     }
     if("text" in node) { //TextDef
-        printTextByIndex(node.text);
+        out(`"${node.text}"`);
         return;
     }
 }
@@ -53,12 +53,7 @@ function printElement(el: ElementDef) {
         out("]");
     }
     if(el.innerText)
-        printTextByIndex(el.innerText);
-}
-
-function printTextByIndex(indexText: string) {
-    let str = globalStringCache[parseInt(indexText)];
-    out(`"${str}"`);
+        out(`"${el.innerText}"`);
 }
 
 function out(text: string) {

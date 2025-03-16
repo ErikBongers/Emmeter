@@ -1,6 +1,8 @@
 //test comment for commit.
+// noinspection JSUnusedGlobalSymbols
 export const NBSP = 160;
 
+// noinspection JSUnusedGlobalSymbols
 export let emmet = {
     create,
     append,
@@ -41,7 +43,6 @@ export type Node = GroupDef | ElementDef | ListDef | TextDef;
 
 let nested: string[] = undefined;
 let lastCreated: HTMLElement = undefined;
-export let globalStringCache: string[] = [];
 
 // noinspection RegExpRedundantEscape
 let reSplit = /([>#=\(\)\+\*\.\[\]\{\}])/;
@@ -78,7 +79,7 @@ function prepareNested(text: string) {
 }
 
 function tokenize(textToTokenize: string) {
-    let tokens = [];
+    let tokens: string[] = [];
     let txt = textToTokenize .replaceAll("\\}", CLOSING_BRACE) .replaceAll('\\"', DOUBLE_QUOTE);
     let pos = 0;
     let start = pos;
@@ -129,24 +130,26 @@ function tokenize(textToTokenize: string) {
 
 function create(text: string, onIndex?: (index: number) => string) {
     let root: HTMLElement = undefined;
-    globalStringCache = prepareNested(text);
-    if (!match("#")) {
+    nested = tokenize(text);
+    let rootId = nested.shift();
+    if (rootId[0] != "#") {
         throw "No root id defined.";
     }
-    root = document.getElementById(nested.shift()) as HTMLElement;
+    root = document.getElementById(rootId) as HTMLElement;
     if(!root)
-        throw `Root ${nested[0]} doesn't exist`;
-    nested.shift(); //consume > todo: should be tested.
+        throw `Root ${rootId} doesn't exist`;
+    if(!match(">"))
+        throw "Expected '>' after root id.";
     return parseAndBuild(root, onIndex);
 }
 
 function append(root: HTMLElement, text: string, onIndex?: (index: number) => string) {
-    globalStringCache = prepareNested(text);
+    nested = tokenize(text);
     return parseAndBuild(root, onIndex);
 }
 
 function insertBefore(root: HTMLElement, text: string, onIndex?: (index: number) => string) {
-    globalStringCache = prepareNested(text);
+    nested = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex);
     for(let child of tempRoot.children) {
@@ -161,7 +164,7 @@ function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string) {
 }
 
 function testEmmet(text: string): Node {
-    globalStringCache = prepareNested(text);
+    nested = tokenize(text);
     return parse();
 }
 
@@ -203,13 +206,17 @@ function parseElement(): Node {
     let el: Node;
     if(match('(')) {
         el = parsePlus();
-        let _closingBrace = nested.shift(); //todo: test!
+        if(!match(")"))
+            throw "Expected ')'";
         return el;
-    } else if(match('{')) {
-        let text = getText();
-        return <TextDef>{text};
     } else {
-        return parseChildDef();
+        let text = matchStartsWith('{');
+        if (text) {
+            text = stripStringDelimiters(text);
+            return <TextDef>{text};
+        } else {
+            return parseChildDef();
+        }
     }
 }
 
@@ -219,27 +226,25 @@ function parseChildDef(): ElementDef {
     let id = undefined;
     let atts: AttDef[] = [];
     let classList: string[] = [];
-    let text = "";
+    let text = undefined;
 
-    breakWhile:
     while(nested.length) {
-        let token = nested.shift();
-        switch(token) {
-            case '.' :
-                classList.push(nested.shift());
-                break;
-            case '#':
-                id = nested.shift();
-                break;
-            case '[':
-                atts = getAttributes();
-                break;
-            case '{':
-                text = getText();
-                break;
-            default:
-                nested.unshift(token);
-                break breakWhile;
+        if (match('.')) {
+            classList.push(nested.shift());//todo: what if there is no next token?
+        } else if (match('[')) {
+            atts = getAttributes();
+        } else {
+            let token = matchStartsWith('#');
+            if(token) {
+                id = token;
+            } else {
+                let token = matchStartsWith('{')
+                if (token) {
+                    text = stripStringDelimiters(token);
+                } else {
+                    break;
+                }
+            }
         }
     }
     return {tag, id, atts, classList, innerText: text, child: parseDown()};
@@ -267,7 +272,7 @@ function getAttributes() {
 
     while(tokens.length) {
         let name = tokens.shift();
-        let eq = tokens.shift();
+        let eq = tokens.shift(); //todo: attribute without a value possible?
         let sub = "";
         if(eq === '.') {
             sub = tokens.shift();
@@ -278,8 +283,7 @@ function getAttributes() {
         }
         let value = tokens.shift();
         if(value[0] === '"') {
-            value = stripQuotes(value);
-            value = globalStringCache[parseInt(value)];
+            value = stripStringDelimiters(value);
         }
         if (!value)
             throw "Value expected.";
@@ -313,8 +317,17 @@ function match(expected: string) {
     return false;
 }
 
-function stripQuotes(text: string) {
-    if(text[0] === "'" || text[0] === '"')
+function matchStartsWith(expected: string) {
+    let next = nested.shift();
+    if(next.startsWith(expected))
+        return next;
+    if(next)
+        nested.unshift(next);
+    return undefined;
+}
+
+function stripStringDelimiters(text: string) {
+    if(text[0] === "'" || text[0] === '"' || text[0] === '{')
         return text.substring(1, text.length-1);
     return text;
 }
@@ -335,8 +348,7 @@ function createElement(parent: HTMLElement, def: ElementDef, index: number, onIn
         }
     }
     if(def.innerText) {
-        let str = globalStringCache[parseInt(def.innerText)];
-        el.appendChild(document.createTextNode(addIndex(str, index, onIndex)));
+        el.appendChild(document.createTextNode(addIndex(def.innerText, index, onIndex)));
     }
     lastCreated = el;
     return el;
@@ -360,8 +372,7 @@ function buildElement(parent: HTMLElement, el: Node, index: number, onIndex: (in
         }
     }
     if("text" in el) { //TextDef
-        let str = globalStringCache[parseInt(el.text)];
-        parent.appendChild(document.createTextNode(addIndex(str, index, onIndex)));
+        parent.appendChild(document.createTextNode(addIndex(el.text, index, onIndex)));
         return;
     }
 }
