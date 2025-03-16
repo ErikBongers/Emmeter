@@ -17,8 +17,11 @@ function print(node: Node) {
         return;
     }
     if("list" in node) { //ListDef
+        let plus = "";
         for( let def of node.list) {
+            out(plus);
             print(def);
+            plus = "+";
         }
         return;
     }
@@ -29,19 +32,28 @@ function print(node: Node) {
         return;
     }
     if("text" in node) { //TextDef
-        printText(node.text);
+        printTextByIndex(node.text);
         return;
     }
 }
 
 function printElement(el: ElementDef) {
-    out(el.tag + " ");
+    out(` ${el.tag} `);
+    if(el.atts.length) {
+        let comma = "";
+        out("[");
+        for (let attr of el.atts) {
+            out(`${comma}${attr.name}="${attr.value}"`)
+            comma = ", ";
+        }
+        out("]");
+    }
     if(el.innerText)
-        printText(el.innerText);
+        printTextByIndex(el.innerText);
 }
 
-function printText(text: string) {
-    let str = globalStringCache[parseInt(text)];
+function printTextByIndex(indexText: string) {
+    let str = globalStringCache[parseInt(indexText)];
     out(`"${str}"`);
 }
 

@@ -43,24 +43,38 @@ let lastCreated: HTMLElement = undefined;
 export let globalStringCache: string[] = [];
 
 // noinspection RegExpRedundantEscape
-let reSplit = /([>\(\)\+\*#\.\[\]\{\}])/;
+let reSplit = /([>#=\(\)\+\*\.\[\]\{\}])/;
 
-// replace {string values} with {n} in case the strings contain special chars.
-function prepareNested(text: string) {
-    let stringCache: string[] = [];
-    let stringMatches = text.matchAll(/{(.*?)}/gm);
-    if(stringMatches) {
-        for(let match of stringMatches){
-            stringCache.push(match[1]);
+const CLOSING_BRACE = "__CLOSINGBRACE__";
+const DOUBLE_QUOTE = "__DOUBLEQUOTE__";
+
+function unescape(text: string) {
+    return text
+        .replaceAll(CLOSING_BRACE, "}")
+        .replaceAll(DOUBLE_QUOTE, '"');
+}
+
+function replaceStringsByPlaceholders(stringCache: string[], text: string, regex: RegExp, leftDelim: string, rightDelim: string) {
+    let matches = text.matchAll(regex);
+    if(matches) {
+        for(let match of matches){
+            text = text.replace(match[0], leftDelim+stringCache.length+rightDelim);
+            stringCache.push(unescape(match[1]));
         }
         stringCache = [...new Set(stringCache)];
     }
-    for(let [index, str] of stringCache.entries()) {
-        text = text.replace("{"+str+"}", "{"+index+"}");
-    }
-    nested = text.split(reSplit);
+    return {text, stringCache};
+}
+// replace {string values} with {n} in case the strings contain special chars.
+function prepareNested(text: string) {
+    let unescaped = text
+        .replaceAll("\\}", CLOSING_BRACE)
+        .replaceAll('\\"', DOUBLE_QUOTE);
+    let result = replaceStringsByPlaceholders([], unescaped, /{(.*?)}/gm, "{", "}");
+    result = replaceStringsByPlaceholders(result.stringCache, result.text, /"(.*?)"/gm, "\"", "\"");
+    nested = result.text.split(reSplit);
     nested = nested.filter(token => token);
-    return stringCache;
+    return result.stringCache;
 }
 
 function create(text: string, onIndex?: (index: number) => string) {
@@ -191,14 +205,13 @@ function parseDown() : Node {
 
 function getAttributes() {
     //gather all the attributes
-    let atts: string[][] = [];
+    let tokens: string[] = [];
     while(nested.length) {
         let prop = nested.shift();
         if(prop == ']')
             break;
-        atts.push(prop.split(/([\s=])/));
+        tokens.push(prop);
     }
-    let tokens = atts.flat()
 
     let attDefs: AttDef[] = [];
 
@@ -213,7 +226,11 @@ function getAttributes() {
         if (eq != '=') {
             throw "Equal sign expected.";
         }
-        let value = stripQuotes(tokens.shift());
+        let value = tokens.shift();
+        if(value[0] === '"') {
+            value = stripQuotes(value);
+            value = globalStringCache[parseInt(value)];
+        }
         if (!value)
             throw "Value expected.";
             attDefs.push({name, sub, value});
