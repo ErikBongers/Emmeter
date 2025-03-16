@@ -7,6 +7,10 @@ export function testIt(text: string) {
     console.log();//flush output.
 }
 
+export function tokenize(text: string) {
+    return emmet.tokenize(text);
+}
+
 function print(node: Node) {
     if("tag" in node) { //ElementDef
         printElement(node);

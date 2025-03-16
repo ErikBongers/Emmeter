@@ -5,7 +5,8 @@ export let emmet = {
     create,
     append,
     insertBefore,
-    testEmmet //todo: this should only be exported to test.ts
+    testEmmet, //todo: this should only be exported to test.ts
+    tokenize, //todo: this should only be exported to test.ts
 };
 
 export interface AttDef {
@@ -74,6 +75,56 @@ function prepareNested(text: string) {
     nested = result.text.split(reSplit);
     nested = nested.filter(token => token);
     return result.stringCache;
+}
+
+function tokenize(textToTokenize: string) {
+    let tokens = [];
+    let txt = textToTokenize .replaceAll("\\}", CLOSING_BRACE) .replaceAll('\\"', DOUBLE_QUOTE);
+    let pos = 0;
+    let start = pos;
+
+    function pushToken() {
+        if (start != pos)
+            tokens.push(txt.substring(start, pos));
+        start = pos;
+    }
+
+    function getTo(to: string) {
+        pushToken();
+        do {
+            pos++;
+        } while (pos < txt.length && txt[pos] != to);
+        if (pos >= txt.length)
+            throw `Missing '${to}'`;
+        pos++;
+        pushToken();
+    }
+
+    function getChar() {
+        pushToken(); pos++; pushToken(); pos++;
+    }
+
+    while(pos < txt.length) {
+        //only test for special chars. All others are assumed alphanumeric
+        switch (txt[pos]) {
+            case '{': getTo("}"); break;
+            case '"': getTo('"'); break;
+            case '#': pushToken(); pos++; break;
+            case '>':
+            case '+':
+            case '[':
+            case ']':
+            case '(':
+            case ')':
+            case '*':
+            case '.':
+            case '=': getChar(); break;
+            default:
+                pos++;
+        }
+    }
+    pushToken();
+    return tokens;
 }
 
 function create(text: string, onIndex?: (index: number) => string) {
