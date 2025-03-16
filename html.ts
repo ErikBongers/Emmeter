@@ -212,7 +212,7 @@ function parseChildDef(): ElementDef {
         } else {
             let token = matchStartsWith('#');
             if(token) {
-                id = token;
+                id = token.substring(1);
             } else {
                 let token = matchStartsWith('{')
                 if (token) {
