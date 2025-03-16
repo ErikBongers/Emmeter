@@ -44,9 +44,6 @@ export type Node = GroupDef | ElementDef | ListDef | TextDef;
 let nested: string[] = undefined;
 let lastCreated: HTMLElement = undefined;
 
-// noinspection RegExpRedundantEscape
-let reSplit = /([>#=\(\)\+\*\.\[\]\{\}])/;
-
 const CLOSING_BRACE = "__CLOSINGBRACE__";
 const DOUBLE_QUOTE = "__DOUBLEQUOTE__";
 
@@ -54,28 +51,6 @@ function unescape(text: string) {
     return text
         .replaceAll(CLOSING_BRACE, "}")
         .replaceAll(DOUBLE_QUOTE, '"');
-}
-
-function replaceStringsByPlaceholders(stringCache: string[], text: string, regex: RegExp, leftDelim: string, rightDelim: string) {
-    let matches = text.matchAll(regex);
-    if(matches) {
-        for(let match of matches){
-            text = text.replace(match[0], leftDelim+stringCache.length+rightDelim); //todo: only replace the first match?
-            stringCache.push(unescape(match[1]));
-        }
-    }
-    return {text, stringCache};
-}
-// replace {string values} with {n} in case the strings contain special chars.
-function prepareNested(text: string) {
-    let unescaped = text
-        .replaceAll("\\}", CLOSING_BRACE)
-        .replaceAll('\\"', DOUBLE_QUOTE);
-    let result = replaceStringsByPlaceholders([], unescaped, /{(.*?)}/gm, "{", "}");
-    result = replaceStringsByPlaceholders(result.stringCache, result.text, /"(.*?)"/gm, "\"", "\"");
-    nested = result.text.split(reSplit);
-    nested = nested.filter(token => token);
-    return result.stringCache;
 }
 
 function tokenize(textToTokenize: string) {
@@ -135,7 +110,7 @@ function create(text: string, onIndex?: (index: number) => string) {
     if (rootId[0] != "#") {
         throw "No root id defined.";
     }
-    root = document.getElementById(rootId) as HTMLElement;
+    root = document.querySelector(rootId) as HTMLElement;
     if(!root)
         throw `Root ${rootId} doesn't exist`;
     if(!match(">"))
@@ -296,18 +271,6 @@ function getAttributes() {
     return attDefs;
 }
 
-function getText() {
-    //gather all the attributes
-    let text = "";
-    while(nested.length) {
-        let prop = nested.shift();
-        if(prop == '}')
-            break;
-        text += prop;
-    }
-    return text;
-}
-
 function match(expected: string) {
     let next = nested.shift();
     if(next === expected)
@@ -384,4 +347,3 @@ function addIndex(text: string, index: number, onIndex: (index: number) => strin
     }
     return text.replace("$", (index+1).toString());
 }
-
