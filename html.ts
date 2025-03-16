@@ -85,7 +85,7 @@ function tokenize(textToTokenize: string) {
 
     function pushToken() {
         if (start != pos)
-            tokens.push(txt.substring(start, pos));
+            tokens.push(unescape(txt.substring(start, pos)));
         start = pos;
     }
 
@@ -95,13 +95,13 @@ function tokenize(textToTokenize: string) {
             pos++;
         } while (pos < txt.length && txt[pos] != to);
         if (pos >= txt.length)
-            throw `Missing '${to}'`;
+            throw `Missing '${to}' at matching from pos ${start}.`;
         pos++;
         pushToken();
     }
 
     function getChar() {
-        pushToken(); pos++; pushToken(); pos++;
+        pushToken(); pos++; pushToken();
     }
 
     while(pos < txt.length) {
