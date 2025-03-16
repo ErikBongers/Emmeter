@@ -95,6 +95,7 @@ function tokenize(textToTokenize: string) {
             case '*':
             case '.':
             case '=': getChar(); break;
+            case ' ': pushToken(); start=++pos; break;
             default:
                 pos++;
         }
@@ -265,8 +266,6 @@ function getAttributes() {
             attDefs.push({name, sub, value});
         if(!tokens.length)
             break;
-        let space = tokens.shift();
-        //TODO: should test for multiple spaces
     }
     return attDefs;
 }
