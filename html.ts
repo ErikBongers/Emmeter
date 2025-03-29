@@ -1,6 +1,5 @@
-//test comment for commit.
 // noinspection JSUnusedGlobalSymbols
-export const NBSP = 160;
+import {tokenize} from "./tokenizer";
 
 // noinspection JSUnusedGlobalSymbols
 export let emmet = {
@@ -44,79 +43,32 @@ export type Node = GroupDef | ElementDef | ListDef | TextDef;
 let nested: string[] = undefined;
 let lastCreated: HTMLElement = undefined;
 
-const CLOSING_BRACE = "__CLOSINGBRACE__";
-const DOUBLE_QUOTE = "__DOUBLEQUOTE__";
-
-function unescape(text: string) {
-    return text
-        .replaceAll(CLOSING_BRACE, "}")
-        .replaceAll(DOUBLE_QUOTE, '"');
-}
-
-function tokenize(textToTokenize: string) {
-    let tokens: string[] = [];
-    let txt = textToTokenize .replaceAll("\\}", CLOSING_BRACE) .replaceAll('\\"', DOUBLE_QUOTE);
-    let pos = 0;
-    let start = pos;
-
-    function pushToken() {
-        if (start != pos)
-            tokens.push(unescape(txt.substring(start, pos)));
-        start = pos;
+function toSelector(node: Node) {
+    if(!('tag' in node)) {
+        throw "TODO: not yet implemented.";
     }
-
-    function getTo(to: string) {
-        pushToken();
-        do {
-            pos++;
-        } while (pos < txt.length && txt[pos] != to);
-        if (pos >= txt.length)
-            throw `Missing '${to}' at matching from pos ${start}.`;
-        pos++;
-        pushToken();
+    let selector = "";
+    if(node.tag)
+        selector += node.tag;
+    if(node.id)
+        selector += "#" + node.id;
+    if(node.classList.length>0) {
+        selector += "." + node.classList.join(".");
     }
-
-    function getChar() {
-        pushToken(); pos++; pushToken();
-    }
-
-    while(pos < txt.length) {
-        //only test for special chars. All others are assumed alphanumeric
-        switch (txt[pos]) {
-            case '{': getTo("}"); break;
-            case '"': getTo('"'); break;
-            case '#': pushToken(); pos++; break;
-            case '>':
-            case '+':
-            case '[':
-            case ']':
-            case '(':
-            case ')':
-            case '*':
-            case '.':
-            case '=': getChar(); break;
-            case ' ': pushToken(); start=++pos; break;
-            default:
-                pos++;
-        }
-    }
-    pushToken();
-    return tokens;
+    return selector;
 }
 
 function create(text: string, onIndex?: (index: number) => string) {
-    let root: HTMLElement = undefined;
     nested = tokenize(text);
-    let rootId = nested.shift();
-    if (rootId[0] != "#") {
-        throw "No root id defined.";
+    let root = parse();
+    let parent = document.querySelector(toSelector(root)) as HTMLElement;
+    if("tag" in root) {
+        root = root.child;
+    } else {
+        throw "root should be a single element.";
     }
-    root = document.querySelector(rootId) as HTMLElement;
-    if(!root)
-        throw `Root ${rootId} doesn't exist`;
-    if(!match(">"))
-        throw "Expected '>' after root id.";
-    return parseAndBuild(root, onIndex);
+    buildElement(parent, root, 1, onIndex);
+    return {root, last: lastCreated};
 }
 
 function append(root: HTMLElement, text: string, onIndex?: (index: number) => string) {
