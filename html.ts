@@ -68,7 +68,7 @@ function create(text: string, onIndex?: (index: number) => string) {
         throw "root should be a single element.";
     }
     buildElement(parent, root, 1, onIndex);
-    return {root, last: lastCreated};
+    return {root: parent, last: lastCreated};
 }
 
 function append(root: HTMLElement, text: string, onIndex?: (index: number) => string) {
