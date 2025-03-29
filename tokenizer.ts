@@ -1,6 +1,8 @@
 export const CLOSING_BRACE = "__CLOSINGBRACE__";
 export const DOUBLE_QUOTE = "__DOUBLEQUOTE__";
 
+export const NBSP = 160;
+
 export function tokenize(textToTokenize: string) {
     let tokens: string[] = [];
     let txt = textToTokenize.replaceAll("\\}", CLOSING_BRACE).replaceAll('\\"', DOUBLE_QUOTE);
