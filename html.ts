@@ -78,22 +78,22 @@ function append(root: HTMLElement, text: string, onIndex?: (index: number) => st
     return parseAndBuild(root, onIndex, hook);
 }
 
-function insertBefore(target: HTMLElement, text: string, onIndex?: (index: number) => string) {
-    return insertAt("beforebegin", target, text, onIndex);
+function insertBefore(target: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
+    return insertAt("beforebegin", target, text, onIndex, hook);
 }
 
-function insertAfter(target: HTMLElement, text: string, onIndex?: (index: number) => string) {
-    return insertAt("afterend", target, text, onIndex);
+function insertAfter(target: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
+    return insertAt("afterend", target, text, onIndex, hook);
 }
 
-function appendChild(parent: HTMLElement, text: string, onIndex?: (index: number) => string) {
-    return insertAt("beforeend", parent, text, onIndex);
+function appendChild(parent: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
+    return insertAt("beforeend", parent, text, onIndex, hook);
 }
 
-function insertAt(position: InsertPosition, target: HTMLElement, text: string, onIndex?: (index: number) => string) {
+function insertAt(position: InsertPosition, target: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
     nested = tokenize(text);
     let tempRoot = document.createElement("div");
-    let result = parseAndBuild(tempRoot, onIndex);
+    let result = parseAndBuild(tempRoot, onIndex, hook);
     for(let child of tempRoot.children) {
         target.insertAdjacentElement(position, child);
     }
@@ -261,7 +261,7 @@ function stripStringDelimiters(text: string) {
 }
 
 //CREATION
-function createElement(parent: HTMLElement, def: ElementDef, index: number, onIndex: (index: number) => string) {
+function createElement(parent: HTMLElement, def: ElementDef, index: number, onIndex: (index: number) => string, hook?: (el: HTMLElement) => void) {
     let el = parent.appendChild(document.createElement(def.tag));
     if (def.id)
         el.id = addIndex(def.id, index, onIndex);
@@ -279,24 +279,26 @@ function createElement(parent: HTMLElement, def: ElementDef, index: number, onIn
         el.appendChild(document.createTextNode(addIndex(def.innerText, index, onIndex)));
     }
     lastCreated = el;
+    if(hook)
+        hook(el);
     return el;
 }
 
-function buildElement(parent: HTMLElement, el: Node, index: number, onIndex: (index: number) => string) {
+function buildElement(parent: HTMLElement, el: Node, index: number, onIndex: (index: number) => string, hook?: (el: HTMLElement) => void) {
     if("tag" in el) { //ElementDef
-        let created = createElement(parent, el, index, onIndex);
+        let created = createElement(parent, el, index, onIndex, hook);
         if(el.child)
-            buildElement(created, el.child, index, onIndex);
+            buildElement(created, el.child, index, onIndex, hook);
         return;
     }
     if("list" in el) { //ListDef
         for( let def of el.list) {
-            buildElement(parent, def, index, onIndex);
+            buildElement(parent, def, index, onIndex, hook);
         }
     }
     if("count" in el) { //GroupDef
         for(let i = 0; i < el.count; i++) {
-            buildElement(parent, el.child, i, onIndex);
+            buildElement(parent, el.child, i, onIndex, hook);
         }
     }
     if("text" in el) { //TextDef
