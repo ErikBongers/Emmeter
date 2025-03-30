@@ -94,10 +94,13 @@ function insertAt(position: InsertPosition, target: HTMLElement, text: string, o
     nested = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex, hook);
+    let first = undefined;
     for(let child of tempRoot.children) {
-        target.insertAdjacentElement(position, child);
+        let result = target.insertAdjacentElement(position, child);
+        if(!first)
+            first = result;
     }
-    return {target, first: tempRoot.children[0], last: result.last};
+    return {target, first, last: result.last};
 }
 
 function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string, hook: (el: HTMLElement) => void) {
