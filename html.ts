@@ -6,6 +6,8 @@ export let emmet = {
     create,
     append,
     insertBefore,
+    insertAfter,
+    appendChild,
     testEmmet, //todo: this should only be exported to test.ts
     tokenize, //todo: this should only be exported to test.ts
 };
@@ -76,14 +78,27 @@ function append(root: HTMLElement, text: string, onIndex?: (index: number) => st
     return parseAndBuild(root, onIndex);
 }
 
-function insertBefore(root: HTMLElement, text: string, onIndex?: (index: number) => string) {
+function insertBefore(target: HTMLElement, text: string, onIndex?: (index: number) => string) {
+    return insertAt("beforebegin", target, text, onIndex);
+}
+
+function insertAfter(target: HTMLElement, text: string, onIndex?: (index: number) => string) {
+    return insertAt("afterend", target, text, onIndex);
+}
+
+function appendChild(parent: HTMLElement, text: string, onIndex?: (index: number) => string) {
+    return insertAt("beforeend", parent, text, onIndex);
+}
+
+function insertAt(position: InsertPosition, target: HTMLElement, text: string, onIndex?: (index: number) => string) {
     nested = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex);
+    //todo: insert 1st child at position and all the other children AFTEREND of the first child.
     for(let child of tempRoot.children) {
-        root.parentElement.insertBefore(child, root);
+        target.insertAdjacentElement(position, child);
     }
-    return {root, last: result.last};
+    return {target, first: tempRoot.children[0], last: result.last};
 }
 
 function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string) {
