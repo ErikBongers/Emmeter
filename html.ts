@@ -60,7 +60,7 @@ function toSelector(node: Node) {
     return selector;
 }
 
-function create(text: string, onIndex?: (index: number) => string) {
+function create(text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
     nested = tokenize(text);
     let root = parse();
     let parent = document.querySelector(toSelector(root)) as HTMLElement;
@@ -69,13 +69,13 @@ function create(text: string, onIndex?: (index: number) => string) {
     } else {
         throw "root should be a single element.";
     }
-    buildElement(parent, root, 1, onIndex);
+    buildElement(parent, root, 1, onIndex, hook);
     return {root: parent, last: lastCreated};
 }
 
-function append(root: HTMLElement, text: string, onIndex?: (index: number) => string) {
+function append(root: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
     nested = tokenize(text);
-    return parseAndBuild(root, onIndex);
+    return parseAndBuild(root, onIndex, hook);
 }
 
 function insertBefore(target: HTMLElement, text: string, onIndex?: (index: number) => string) {
@@ -94,15 +94,14 @@ function insertAt(position: InsertPosition, target: HTMLElement, text: string, o
     nested = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex);
-    //todo: insert 1st child at position and all the other children AFTEREND of the first child.
     for(let child of tempRoot.children) {
         target.insertAdjacentElement(position, child);
     }
     return {target, first: tempRoot.children[0], last: result.last};
 }
 
-function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string) {
-    buildElement(root, parse(), 1, onIndex);
+function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string, hook: (el: HTMLElement) => void) {
+    buildElement(root, parse(), 1, onIndex, hook);
     return {root, last: lastCreated};
 }
 
