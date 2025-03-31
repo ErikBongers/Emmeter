@@ -95,10 +95,16 @@ function insertAt(position: InsertPosition, target: HTMLElement, text: string, o
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex, hook);
     let first = undefined;
-    for(let child of tempRoot.children) {
-        let result = target.insertAdjacentElement(position, child);
-        if(!first)
-            first = result;
+    let insertPos = target as Element;
+    let children = [...tempRoot.children]; //we'll be removing children from tempRoot, so copy the list.
+    for(let child of children) {
+        if(!first) {
+            //first element should be inserted at the specified position
+            first = insertPos = insertPos.insertAdjacentElement(position, child);
+        } else {
+            //consequent children should be inserted after the previous one.
+            insertPos = insertPos.insertAdjacentElement("afterend", child);
+        }
     }
     return {target, first, last: result.last};
 }
