@@ -1,3 +1,5 @@
+//todo: use Element as param or return type for most of the functions.
+
 // noinspection JSUnusedGlobalSymbols
 import {tokenize} from "./tokenizer";
 
@@ -94,7 +96,7 @@ function insertAt(position: InsertPosition, target: HTMLElement, text: string, o
     nested = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex, hook);
-    let first = undefined;
+    let first: Element = undefined;
     let insertPos = target as Element;
     let children = [...tempRoot.children]; //we'll be removing children from tempRoot, so copy the list.
     for(let child of children) {
