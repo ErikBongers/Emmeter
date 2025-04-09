@@ -1,5 +1,3 @@
-//todo: use Element as param or return type for most of the functions.
-
 // noinspection JSUnusedGlobalSymbols
 import {tokenize} from "./tokenizer";
 
@@ -45,7 +43,7 @@ export interface TextDef {
 export type Node = GroupDef | ElementDef | ListDef | TextDef;
 
 let nested: string[] = undefined;
-let lastCreated: HTMLElement = undefined;
+let lastCreated: Element = undefined;
 
 function toSelector(node: Node) {
     if(!('tag' in node)) {
@@ -62,10 +60,10 @@ function toSelector(node: Node) {
     return selector;
 }
 
-function create(text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
+function create(text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     nested = tokenize(text);
     let root = parse();
-    let parent = document.querySelector(toSelector(root)) as HTMLElement;
+    let parent = document.querySelector(toSelector(root)) as Element;
     if("tag" in root) {
         root = root.child;
     } else {
@@ -75,24 +73,24 @@ function create(text: string, onIndex?: (index: number) => string, hook?: (el: H
     return {root: parent, last: lastCreated};
 }
 
-function append(root: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
+function append(root: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     nested = tokenize(text);
     return parseAndBuild(root, onIndex, hook);
 }
 
-function insertBefore(target: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
+function insertBefore(target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     return insertAt("beforebegin", target, text, onIndex, hook);
 }
 
-function insertAfter(target: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
+function insertAfter(target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     return insertAt("afterend", target, text, onIndex, hook);
 }
 
-function appendChild(parent: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
+function appendChild(parent: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     return insertAt("beforeend", parent, text, onIndex, hook);
 }
 
-function insertAt(position: InsertPosition, target: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: HTMLElement) => void) {
+function insertAt(position: InsertPosition, target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     nested = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex, hook);
@@ -111,7 +109,7 @@ function insertAt(position: InsertPosition, target: HTMLElement, text: string, o
     return {target, first, last: result.last};
 }
 
-function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string, hook: (el: HTMLElement) => void) {
+function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string, hook: (el: Element) => void) {
     buildElement(root, parse(), 1, onIndex, hook);
     return {root, last: lastCreated};
 }
@@ -272,7 +270,7 @@ function stripStringDelimiters(text: string) {
 }
 
 //CREATION
-function createElement(parent: HTMLElement, def: ElementDef, index: number, onIndex: (index: number) => string, hook?: (el: HTMLElement) => void) {
+function createElement(parent: Element, def: ElementDef, index: number, onIndex: (index: number) => string, hook?: (el: Element) => void) {
     let el = parent.appendChild(document.createElement(def.tag));
     if (def.id)
         el.id = addIndex(def.id, index, onIndex);
@@ -295,7 +293,7 @@ function createElement(parent: HTMLElement, def: ElementDef, index: number, onIn
     return el;
 }
 
-function buildElement(parent: HTMLElement, el: Node, index: number, onIndex: (index: number) => string, hook?: (el: HTMLElement) => void) {
+function buildElement(parent: Element, el: Node, index: number, onIndex: (index: number) => string, hook?: (el: Element) => void) {
     if("tag" in el) { //ElementDef
         let created = createElement(parent, el, index, onIndex, hook);
         if(el.child)
