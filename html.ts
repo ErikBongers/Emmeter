@@ -181,7 +181,10 @@ function parseChildDef(): ElementDef {
 
     while(nested.length) {
         if (match('.')) {
-            classList.push(nested.shift());//todo: what if there is no next token?
+            let className = nested.shift();
+            if(!className)
+                throw "Unexpected end of stream. Class name expected.";
+            classList.push(className);
         } else if (match('[')) {
             atts = getAttributes();
         } else {
