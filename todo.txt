@@ -1,4 +1,7 @@
 * attribute names can have the format xxx.xxx.xxx.xxx
+
 * attrubutes can have no value
   : xxx="some value"
   > xxx  --> same as xxx="" !!!
+
+* difference between append and insertAfter isn't clear.
