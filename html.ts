@@ -226,7 +226,7 @@ function getAttributes() {
 
     while(tokens.length) {
         let name = tokens.shift();
-        let eq = tokens.shift(); //todo: attribute without a value possible?
+        let eq = tokens.shift();
         let sub = "";
         if(eq === '.') {
             sub = tokens.shift();
