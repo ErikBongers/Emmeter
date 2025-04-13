@@ -11,7 +11,7 @@ export function tokenize(textToTokenize: string) {
 
     function pushToken() {
         if (start != pos)
-            tokens.push(unescape(txt.substring(start, pos)));
+            tokens.push(txt.substring(start, pos));
         start = pos;
     }
 
