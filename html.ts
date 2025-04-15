@@ -8,8 +8,10 @@ export let emmet = {
     insertBefore,
     insertAfter,
     appendChild,
-    testEmmet, //todo: this should only be exported to test.ts
-    tokenize, //todo: this should only be exported to test.ts
+    test: {
+        testEmmet,
+        tokenize,
+    }
 };
 
 export interface AttDef {
