@@ -22,11 +22,11 @@ export interface AttDef {
 
 export interface GroupDef {
     count: number,
-    child: Node
+    child: EmmetNode
 }
 
 export interface ListDef {
-    list: Node[];
+    list: EmmetNode[];
 }
 
 export interface ElementDef {
@@ -35,19 +35,19 @@ export interface ElementDef {
     atts: AttDef[]
     classList: string[],
     innerText: string,
-    child: Node
+    child: EmmetNode
 }
 
 export interface TextDef {
     text: string
 }
 
-export type Node = GroupDef | ElementDef | ListDef | TextDef;
+export type EmmetNode = GroupDef | ElementDef | ListDef | TextDef;
 
 let nested: string[] = undefined;
 let lastCreated: Element = undefined;
 
-function toSelector(node: Node) {
+function toSelector(node: EmmetNode) {
     if(!('tag' in node)) {
         throw "TODO: not yet implemented.";
     }
@@ -96,19 +96,38 @@ function insertAt(position: InsertPosition, target: Element, text: string, onInd
     nested = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex, hook);
-    let first: Element = undefined;
-    let insertPos = target as Element;
-    let children = [...tempRoot.children]; //we'll be removing children from tempRoot, so copy the list.
+    let first: Node = undefined;
+    let insertPos = target as Node;
+    let children = [...tempRoot.childNodes]; //we'll be removing children from tempRoot, so copy the list.
     for(let child of children) {
         if(!first) {
             //first element should be inserted at the specified position
-            first = insertPos = insertPos.insertAdjacentElement(position, child);
+            if(child.nodeType === Node.TEXT_NODE)
+                first = insertPos = insertAdjacentText(target, position, (child as Text).wholeText);
+            else
+                first = insertPos = target.insertAdjacentElement(position, child as Element);
         } else {
             //consequent children should be inserted after the previous one.
-            insertPos = insertPos.insertAdjacentElement("afterend", child);
+            if(child.nodeType === Node.TEXT_NODE)
+                insertPos = insertPos.parentElement.insertBefore(document.createTextNode((child as Text).wholeText), insertPos.nextSibling);
+            else
+                insertPos = insertPos.parentElement.insertBefore(child, insertPos.nextSibling);
         }
     }
     return {target, first, last: result.last};
+}
+
+function insertAdjacentText(target: Node, position: InsertPosition, text: string) {
+    switch(position) {
+        case "beforebegin": // Before the element itself.
+            return target.parentElement.insertBefore(document.createTextNode(text), target);
+        case "afterbegin": // Just inside the element, before its first child.
+            return target.insertBefore(document.createTextNode(text), target.firstChild);
+        case "beforeend": // Just inside the element, after its last child.
+            return target.appendChild(document.createTextNode(text));
+        case "afterend": // After the element itself.
+            return target.parentElement.appendChild(document.createTextNode(text));
+    }
 }
 
 function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string, hook: (el: Element) => void) {
@@ -116,7 +135,7 @@ function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string, ho
     return {root, last: lastCreated};
 }
 
-function testEmmet(text: string): Node {
+function testEmmet(text: string): EmmetNode {
     nested = tokenize(text);
     return parse();
 }
@@ -126,7 +145,7 @@ function parse() {
 }
 
 //parse a+b+c>d...
-function parsePlus(): Node {
+function parsePlus(): EmmetNode {
     let list = [];
     while(true) {
         let el = parseMult();
@@ -138,7 +157,7 @@ function parsePlus(): Node {
     }
 }
 
-function parseMult() : Node {
+function parseMult() : EmmetNode {
     let el = parseElement();
     if(!el)
         return el;
@@ -155,8 +174,8 @@ function parseMult() : Node {
 }
 
 // parse group or primary element (and children)
-function parseElement(): Node {
-    let el: Node;
+function parseElement(): EmmetNode {
+    let el: EmmetNode;
     if(match('(')) {
         el = parsePlus();
         if(!match(")"))
@@ -207,7 +226,7 @@ function parseChildDef(): ElementDef {
 }
 
 // parse >...
-function parseDown() : Node {
+function parseDown() : EmmetNode {
     if(match('>')) {
         return parsePlus();
     }
@@ -298,7 +317,7 @@ function createElement(parent: Element, def: ElementDef, index: number, onIndex:
     return el;
 }
 
-function buildElement(parent: Element, el: Node, index: number, onIndex: (index: number) => string, hook?: (el: Element) => void) {
+function buildElement(parent: Element, el: EmmetNode, index: number, onIndex: (index: number) => string, hook?: (el: Element) => void) {
     if("tag" in el) { //ElementDef
         let created = createElement(parent, el, index, onIndex, hook);
         if(el.child)

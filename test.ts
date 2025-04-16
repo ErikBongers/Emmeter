@@ -1,4 +1,4 @@
-import {ElementDef, emmet, Node} from "./html";
+import {ElementDef, emmet, EmmetNode} from "./html";
 
 export function testIt(text: string) {
     let result = emmet.testEmmet(text);
@@ -11,7 +11,7 @@ export function tokenize(text: string) {
     return emmet.tokenize(text);
 }
 
-function print(node: Node) {
+function print(node: EmmetNode) {
     if("tag" in node) { //ElementDef
         printElement(node);
         if(node.child) {
