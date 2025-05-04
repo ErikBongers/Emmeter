@@ -1,14 +1,14 @@
 import {ElementDef, emmet, EmmetNode} from "./html";
 
 export function testIt(text: string) {
-    let result = emmet.testEmmet(text);
+    let result = emmet.test.testEmmet(text);
     console.log(result);
     print(result);
     console.log();//flush output.
 }
 
 export function tokenize(text: string) {
-    return emmet.tokenize(text);
+    return emmet.test.tokenize(text);
 }
 
 function print(node: EmmetNode) {

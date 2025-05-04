@@ -247,6 +247,9 @@ function getAttributes() {
 
     while(tokens.length) {
         let name = tokens.shift();
+        if(name[0] === ',') {
+            throw "Unexpected ',' - don't separate attributes with ','.";
+        }
         let eq = tokens.shift();
         let sub = "";
         if(eq === '.') {
