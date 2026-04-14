@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
     "target": "es2022",
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noImplicitAny": true
   }
 }

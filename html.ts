@@ -306,7 +306,9 @@ function createElement(parent: Element, def: ElementDef, index: number, onIndex:
     }
     for (let att of def.atts) {
         if (att.sub)
-            el[addIndex(att.name, index, onIndex)][addIndex(att.sub, index, onIndex)] = addIndex(att.value, index, onIndex);
+            { // @ts-ignore
+                el[addIndex(att.name, index, onIndex)][addIndex(att.sub, index, onIndex)] = addIndex(att.value, index, onIndex);
+            }
         else {
             el.setAttribute(addIndex(att.name, index, onIndex), addIndex(att.value, index, onIndex));
         }
