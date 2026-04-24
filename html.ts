@@ -31,11 +31,11 @@ export interface ListDef {
 
 export interface ElementDef {
     tag: string,
-    id: string,
+    id?: string,
     atts: AttDef[]
     classList: string[],
-    innerText: string,
-    child: EmmetNode
+    innerText?: string,
+    child?: EmmetNode
 }
 
 export interface TextDef {
@@ -44,8 +44,8 @@ export interface TextDef {
 
 export type EmmetNode = GroupDef | ElementDef | ListDef | TextDef;
 
-let nested: string[] = undefined;
-let lastCreated: Element = undefined;
+let nested: string[] | undefined = undefined;
+let lastCreated: Element | undefined = undefined;
 
 function toSelector(node: EmmetNode) {
     if(!('tag' in node)) {
@@ -67,7 +67,7 @@ function create(text: string, onIndex?: (index: number) => string, hook?: (el: E
     let root = parse();
     let parent = document.querySelector(toSelector(root)) as Element;
     if("tag" in root) {
-        root = root.child;
+        root = root.child!; // a tag MUST have a child.
     } else {
         throw "root should be a single element.";
     }
@@ -96,22 +96,22 @@ function insertAt(position: InsertPosition, target: Element, text: string, onInd
     nested = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex, hook);
-    let first: Node = undefined;
-    let insertPos = target as Node;
+    let first: Node | null = null;
+    let insertPos: Node = target as Node;
     let children = [...tempRoot.childNodes]; //we'll be removing children from tempRoot, so copy the list.
     for(let child of children) {
         if(!first) {
             //first element should be inserted at the specified position
             if(child.nodeType === Node.TEXT_NODE)
-                first = insertPos = insertAdjacentText(target, position, (child as Text).wholeText);
+                first = insertPos = insertAdjacentText(target, position, (child as Text).wholeText)!;
             else
-                first = insertPos = target.insertAdjacentElement(position, child as Element);
+                first = insertPos = target.insertAdjacentElement(position, child as Element)!;
         } else {
             //consequent children should be inserted after the previous one.
             if(child.nodeType === Node.TEXT_NODE)
-                insertPos = insertPos.parentElement.insertBefore(document.createTextNode((child as Text).wholeText), insertPos.nextSibling);
+                insertPos = insertPos.parentElement!.insertBefore(document.createTextNode((child as Text).wholeText), insertPos.nextSibling);
             else
-                insertPos = insertPos.parentElement.insertBefore(child, insertPos.nextSibling);
+                insertPos = insertPos.parentElement!.insertBefore(child, insertPos.nextSibling);
         }
     }
     return {target, first, last: result.last};
@@ -120,17 +120,17 @@ function insertAt(position: InsertPosition, target: Element, text: string, onInd
 function insertAdjacentText(target: Node, position: InsertPosition, text: string) {
     switch(position) {
         case "beforebegin": // Before the element itself.
-            return target.parentElement.insertBefore(document.createTextNode(text), target);
+            return target.parentElement!.insertBefore(document.createTextNode(text), target);
         case "afterbegin": // Just inside the element, before its first child.
             return target.insertBefore(document.createTextNode(text), target.firstChild);
         case "beforeend": // Just inside the element, after its last child.
             return target.appendChild(document.createTextNode(text));
         case "afterend": // After the element itself.
-            return target.parentElement.appendChild(document.createTextNode(text));
+            return target.parentElement!.appendChild(document.createTextNode(text));
     }
 }
 
-function parseAndBuild(root: HTMLElement, onIndex: (index: number) => string, hook: (el: Element) => void) {
+function parseAndBuild(root: HTMLElement, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     buildElement(root, parse(), 1, onIndex, hook);
     return {root, last: lastCreated};
 }
@@ -162,7 +162,10 @@ function parseMult() : EmmetNode {
     if(!el)
         return el;
     if(match('*')) {
-        let count = parseInt(nested.shift());
+        let mustBeNumber =nested!.shift(); //todo: can we guarantee at compile time that nested is filled?
+        if(!mustBeNumber)
+            throw "Number expecting after multiplier symbol '*'";
+        let count = parseInt(mustBeNumber);
         //wrap el in a count group.
         return  {
             count,
@@ -194,15 +197,18 @@ function parseElement(): EmmetNode {
 
 
 function parseChildDef(): ElementDef {
-    let tag = nested.shift();
+    let tag = nested!.shift();
     let id = undefined;
     let atts: AttDef[] = [];
     let classList: string[] = [];
-    let text = undefined;
+    let text: string | undefined = undefined;
 
-    while(nested.length) {
+    if(!tag)
+        throw "Unexpected end of stream. Tag expected.";
+
+    while(nested!.length) {
         if (match('.')) {
-            let className = nested.shift();
+            let className = nested!.shift();
             if(!className)
                 throw "Unexpected end of stream. Class name expected.";
             classList.push(className);
@@ -226,7 +232,7 @@ function parseChildDef(): ElementDef {
 }
 
 // parse >...
-function parseDown() : EmmetNode {
+function parseDown() : EmmetNode | undefined {
     if(match('>')) {
         return parsePlus();
     }
@@ -236,8 +242,8 @@ function parseDown() : EmmetNode {
 function getAttributes() {
     //gather all the attributes
     let tokens: string[] = [];
-    while(nested.length) {
-        let prop = nested.shift();
+    while(nested!.length) {
+        let prop = nested!.shift()!; // !: length has been checked.
         if(prop == ']')
             break;
         tokens.push(prop);
@@ -246,20 +252,22 @@ function getAttributes() {
     let attDefs: AttDef[] = [];
 
     while(tokens.length) {
-        let name = tokens.shift();
+        let name = tokens.shift()!; // !: length has been checked.
         if(name[0] === ',') {
             throw "Unexpected ',' - don't separate attributes with ','.";
         }
         let eq = tokens.shift();
-        let sub = "";
+        let sub: string = "";
         if(eq === '.') {
-            sub = tokens.shift();
+            sub = tokens.shift() ?? "";
             eq = tokens.shift();
         }
         if (eq != '=') {
             throw "Equal sign expected.";
         }
         let value = tokens.shift();
+        if(!value)
+            throw "Value expected";
         if(value[0] === '"') {
             value = stripStringDelimiters(value);
         }
@@ -273,20 +281,22 @@ function getAttributes() {
 }
 
 function match(expected: string) {
-    let next = nested.shift();
+    let next = nested!.shift();
     if(next === expected)
         return true;
     if(next)
-        nested.unshift(next);
+        nested!.unshift(next);
     return false;
 }
 
 function matchStartsWith(expected: string) {
-    let next = nested.shift();
+    let next = nested!.shift();
+    if(!next)
+        return undefined;
     if(next.startsWith(expected))
         return next;
     if(next)
-        nested.unshift(next);
+        nested!.unshift(next);
     return undefined;
 }
 
@@ -297,7 +307,7 @@ function stripStringDelimiters(text: string) {
 }
 
 //CREATION
-function createElement(parent: Element, def: ElementDef, index: number, onIndex: (index: number) => string, hook?: (el: Element) => void) {
+function createElement(parent: Element, def: ElementDef, index: number, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     let el = parent.appendChild(document.createElement(def.tag));
     if (def.id)
         el.id = addIndex(def.id, index, onIndex);
@@ -322,7 +332,7 @@ function createElement(parent: Element, def: ElementDef, index: number, onIndex:
     return el;
 }
 
-function buildElement(parent: Element, el: EmmetNode, index: number, onIndex: (index: number) => string, hook?: (el: Element) => void) {
+function buildElement(parent: Element, el: EmmetNode, index: number, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     if("tag" in el) { //ElementDef
         let created = createElement(parent, el, index, onIndex, hook);
         if(el.child)
@@ -345,7 +355,7 @@ function buildElement(parent: Element, el: EmmetNode, index: number, onIndex: (i
     }
 }
 
-function addIndex(text: string, index: number, onIndex: (index: number) => string) {
+function addIndex(text: string, index: number, onIndex?: (index: number) => string) {
     if(onIndex) {
         let result = onIndex(index);
         text = text.replace("$$", result);
