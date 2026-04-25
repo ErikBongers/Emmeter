@@ -162,7 +162,7 @@ function parseMult() : EmmetNode {
     if(!el)
         return el;
     if(match('*')) {
-        let mustBeNumber =nested!.shift(); //todo: can we guarantee at compile time that nested is filled?
+        let mustBeNumber =nested!.shift();
         if(!mustBeNumber)
             throw "Number expecting after multiplier symbol '*'";
         let count = parseInt(mustBeNumber);
