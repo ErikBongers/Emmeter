@@ -72,7 +72,7 @@ function create(text: string, onIndex?: (index: number) => string, hook?: (el: E
         throw "root should be a single element.";
     }
     buildElement(parent, root, 1, onIndex, hook);
-    return {root: parent, last: lastCreated};
+    return {root: parent, last: lastCreated as Element};
 }
 
 function append(root: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
@@ -114,7 +114,7 @@ function insertAt(position: InsertPosition, target: Element, text: string, onInd
                 insertPos = insertPos.parentElement!.insertBefore(child, insertPos.nextSibling);
         }
     }
-    return {target, first, last: result.last};
+    return {target, first: first as Node, last: result.last};
 }
 
 function insertAdjacentText(target: Node, position: InsertPosition, text: string) {
@@ -132,7 +132,7 @@ function insertAdjacentText(target: Node, position: InsertPosition, text: string
 
 function parseAndBuild(root: HTMLElement, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     buildElement(root, parse(), 1, onIndex, hook);
-    return {root, last: lastCreated};
+    return {root, last: lastCreated as Element};
 }
 
 function testEmmet(text: string): EmmetNode {
