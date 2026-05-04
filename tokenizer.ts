@@ -59,6 +59,7 @@ export function tokenize(textToTokenize: string) {
                 getChar();
                 break;
             case ' ':
+            case '\n':
                 pushToken();
                 start = ++pos;
                 break;
