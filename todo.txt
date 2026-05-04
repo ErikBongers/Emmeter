@@ -1,3 +1,9 @@
+* test excaped chars ( "\}" and "\"")
+  > I think they are not handled yet.
+    > they are escaped by the tokenizer but not un-escapced back.
+
+* allow multiline
+
 * attribute names can have the format xxx.xxx.xxx.xxx
 
 * attrubutes can have no value
