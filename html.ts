@@ -271,9 +271,7 @@ function getAttributes() {
         if(value[0] === '"') {
             value = stripStringDelimiters(value);
         }
-        if (!value)
-            throw "Value expected.";
-            attDefs.push({name, sub, value});
+        attDefs.push({name, sub, value});
         if(!tokens.length)
             break;
     }
