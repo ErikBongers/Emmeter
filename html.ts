@@ -4,6 +4,7 @@ import {tokenize} from "./tokenizer";
 // noinspection JSUnusedGlobalSymbols
 export let emmet = {
     create,
+    create2,
     append,
     insertBefore,
     insertAfter,
@@ -51,6 +52,8 @@ function toSelector(node: EmmetNode) {
     if(!('tag' in node)) {
         throw "TODO: not yet implemented.";
     }
+    //todo: the selector may be just a tag name which is just too random.
+    // > either create a temp parent in emmet.create() instead of this toSelector() hack.
     let selector = "";
     if(node.tag)
         selector += node.tag;
@@ -62,9 +65,21 @@ function toSelector(node: EmmetNode) {
     return selector;
 }
 
+function create2(text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+    let tempDiv = document.createElement("div");
+    let result = appendChild(tempDiv, text, onIndex, hook);
+    let first = result.first as HTMLElement;
+    first.remove();
+    return first;
+}
+
+//todo: this creates items under the ALREADY EXISTING root element in the string. That's really not what you expect.
+//find all usages in all projects and fix this (e.g. with a create2() function...but that sucks too...
+
 function create(text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     nested = tokenize(text);
     let root = parse();
+    //todo: the toSelector has issues.
     let parent = document.querySelector(toSelector(root)) as Element;
     if("tag" in root) {
         root = root.child!; // a tag MUST have a child.
@@ -271,9 +286,7 @@ function getAttributes() {
         if(value[0] === '"') {
             value = stripStringDelimiters(value);
         }
-        if (!value)
-            throw "Value expected.";
-            attDefs.push({name, sub, value});
+        attDefs.push({name, sub, value});
         if(!tokens.length)
             break;
     }

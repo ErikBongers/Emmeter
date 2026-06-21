@@ -11,7 +11,9 @@ export function tokenize(textToTokenize: string) {
 
     function pushToken() {
         if (start != pos)
-            tokens.push(txt.substring(start, pos));
+            tokens.push(txt.substring(start, pos)
+                .replaceAll(CLOSING_BRACE, "}")
+                .replaceAll(DOUBLE_QUOTE, '"'));
         start = pos;
     }
 
@@ -57,6 +59,7 @@ export function tokenize(textToTokenize: string) {
                 getChar();
                 break;
             case ' ':
+            case '\n':
                 pushToken();
                 start = ++pos;
                 break;
