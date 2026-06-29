@@ -9,5 +9,8 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/ErikBongers/Emmeter.git"
+    },
+    "devDependencies": {
+        "tsx": "^4.22.4"
     }
 }
