@@ -1,5 +1,3 @@
-* Change cursor.goTo functions the return a pos instead of text.
-
 * test excaped chars ( "\}" and "\"")
   > I think they are not handled yet.
     > they are escaped by the tokenizer but not un-escapced back.

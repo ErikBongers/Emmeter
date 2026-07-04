@@ -1,3 +1,5 @@
+export type CursorRange = {start: number, length: number};
+
 export class Cursor {
     private readonly text: string;
     private currentPos: number;
@@ -61,7 +63,7 @@ export class Cursor {
         if(end == this.length)
             return null;
         this.currentPos = end;
-        return {start, length: this.currentPos-start+1};
+        return {start, length: this.currentPos-start+1} satisfies CursorRange as CursorRange;
     }
 
     getToNot(notChar: string) {
@@ -75,7 +77,7 @@ export class Cursor {
         if(end == start)
             return null;
         this.currentPos = end-1;
-        return {start, length: this.currentPos-start+1};
+        return {start, length: this.currentPos-start+1} satisfies CursorRange as CursorRange;
     }
 
 }

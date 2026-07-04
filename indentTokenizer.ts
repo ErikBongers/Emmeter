@@ -1,6 +1,6 @@
-import {Cursor} from "./cursor";
+import {Cursor, CursorRange} from "./cursor";
 
-export type TokenType = "EOF" | "UNKNOWN" | "INDENT" | "NUMBER" | "STRING" | "(" | ")" | "." | "," | "€" | "$" | "/" | "*" | "+" | "-";
+export type TokenType = "EOF" | "UNKNOWN" | "INDENT" | "ID" | "NUMBER" | "STRING" | "(" | ")" | "." | "," | "€" | "$" | "/" | "*" | "+" | "-" | "#";
 
 export interface Token {
     type: TokenType;
@@ -30,8 +30,24 @@ export class Tokenizer {
 
     next(): Token | null {
         let char = this.cursor.next();
+        let found: CursorRange | null;
+        let id = this.eatId(char);
+        if(id)
+            return id;
         switch (char) {
             case "":
+                return null;
+            case '\n':
+                //after a new line, check the new indent.
+                found = this.cursor.getToNot(' ');
+                if(found) {
+                    return {
+                        type: "INDENT",
+                        cursor: this.cursor,
+                        pos: found.start,
+                        length: found.length,
+                    };
+                }
                 return null;
             case '>':
             case '+':
@@ -42,15 +58,24 @@ export class Tokenizer {
             case '*':
             case '.':
             case '=':
-                let token: Token = {
+            case '#':
+                return {
                     type: char as TokenType,
                     cursor: this.cursor,
                     pos: this.cursor.pos,
                     length: 1,
                 };
-                return token;
-            case "{":
-                let text = this.cursor.getTo("}");
+            case '{':
+                found = this.cursor.getTo("}");
+                if(found) {
+                    return {
+                        type: "STRING",
+                        cursor: this.cursor,
+                        pos: found.start,
+                        length: found.length-1,
+                    }
+                }
+                return null;//todo: error.
             default:
                 return {
                     type: "UNKNOWN",
@@ -58,6 +83,21 @@ export class Tokenizer {
                     pos: this.cursor.pos,
                     length: 1,
                 };
+        }
+    }
+
+    private eatId(char: string) {
+        let pos = this.cursor.pos;
+        if(char.match(/[a-zA-Z]/)) {
+            while (this.cursor.peek().match(/[a-zA-Z0-9_]/)) {
+                this.cursor.next();
+            }
+            return {
+                type: "ID",
+                cursor: this.cursor,
+                pos,
+                length: this.cursor.pos - pos+1,
+            } satisfies Token as Token;
         }
         return null;
     }

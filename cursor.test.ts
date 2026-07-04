@@ -13,6 +13,7 @@ describe('Test cursor', () => {
         let found = cursor.getTo('x');
         assert.equal(found, null);
         found = cursor.getTo('c');
+        assert.equal(found!.length, 3);
         assert.equal(cursor.getText(found!.start, found!.length), "b c");
         res = cursor.peek();
         assert.equal(res, "d");
