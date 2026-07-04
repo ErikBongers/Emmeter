@@ -53,19 +53,29 @@ export class Cursor {
     }
 
     getTo(endChar: string) {
-        let start = this.currentPos;
-        while(this.currentPos < this.length && this.text[this.currentPos] != endChar) {
-            this.currentPos++;
+        let start = this.currentPos+1;
+        let end = start;
+        while(end < this.length && this.text[end] != endChar) {
+            end++;
         }
-        return this.text.substring(start, this.currentPos);
+        if(end == this.length)
+            return "";
+        this.currentPos = end;
+        return this.text.substring(start, this.currentPos+1);
     }
 
     getToNot(notChar: string) {
-        let start = this.currentPos;
-        while(this.currentPos < this.length && this.text[this.currentPos] == notChar) {
-            this.currentPos++;
+        let start = this.currentPos+1;
+        let end = start;
+        while(end < this.length && this.text[end] == notChar) {
+            end++;
         }
-        return this.text.substring(start, this.currentPos);
+        if(end == this.length)
+            return "";
+        if(end == start)
+            return "";
+        this.currentPos = end-1;
+        return this.text.substring(start, this.currentPos+1);
     }
 
 }
