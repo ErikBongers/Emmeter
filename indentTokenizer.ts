@@ -1,6 +1,6 @@
 import {Cursor} from "./cursor";
 
-export type TokenType = "UNKNOWN" | "INDENT" | "NUMBER" | "STRING" | "(" | ")" | "." | "," | "€" | "$" | "/" | "*" | "+" | "-";
+export type TokenType = "EOF" | "UNKNOWN" | "INDENT" | "NUMBER" | "STRING" | "(" | ")" | "." | "," | "€" | "$" | "/" | "*" | "+" | "-";
 
 export interface Token {
     type: TokenType;
@@ -29,7 +29,6 @@ export class Tokenizer {
     }
 
     next(): Token | null {
-        this.skipSpaces();
         let char = this.cursor.next();
         switch (char) {
             case "":
@@ -51,7 +50,7 @@ export class Tokenizer {
                 };
                 return token;
             case "{":
-                this.cursor.
+                let text = this.cursor.getTo("}");
             default:
                 return {
                     type: "UNKNOWN",
@@ -60,6 +59,7 @@ export class Tokenizer {
                     length: 1,
                 };
         }
+        return null;
     }
 
     private getNumberToken() {
