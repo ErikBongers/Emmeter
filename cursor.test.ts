@@ -10,19 +10,19 @@ describe('Test cursor', () => {
         res = cursor.peek();
         assert.equal(res, "b");
 
-        res = cursor.getTo('x');
-        assert.equal(res, "");
-        res = cursor.getTo('c');
-        assert.equal(res, "b c");
+        let found = cursor.getTo('x');
+        assert.equal(found, null);
+        found = cursor.getTo('c');
+        assert.equal(cursor.getText(found!.start, found!.length), "b c");
         res = cursor.peek();
         assert.equal(res, "d");
 
-        res = cursor.getToNot(' ');
-        assert.equal(res, "");
+        found = cursor.getToNot(' ');
+        assert.equal(found, null);
         res = cursor.next();
         assert.equal(res, "d");
-        res = cursor.getToNot(' ');
-        assert.equal(res, "     ");
+        found = cursor.getToNot(' ');
+        assert.equal(cursor.getText(found!.start, found!.length), "     ");
         res = cursor.next();
         assert.equal(res, "e");
         res = cursor.next();
@@ -31,8 +31,8 @@ describe('Test cursor', () => {
         assert.equal(res, "");
 
         cursor = new Cursor("ab cd     ef");
-        res = cursor.getTo('f');
-        assert.equal(res, "ab cd     ef");
+        found = cursor.getTo('f');
+        assert.equal(cursor.getText(found!.start, found!.length), "ab cd     ef");
         res = cursor.next();
         assert.equal(res, "");
 

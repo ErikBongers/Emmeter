@@ -59,9 +59,9 @@ export class Cursor {
             end++;
         }
         if(end == this.length)
-            return "";
+            return null;
         this.currentPos = end;
-        return this.text.substring(start, this.currentPos+1);
+        return {start, length: this.currentPos-start+1};
     }
 
     getToNot(notChar: string) {
@@ -71,11 +71,11 @@ export class Cursor {
             end++;
         }
         if(end == this.length)
-            return "";
+            return null;
         if(end == start)
-            return "";
+            return null;
         this.currentPos = end-1;
-        return this.text.substring(start, this.currentPos+1);
+        return {start, length: this.currentPos-start+1};
     }
 
 }
