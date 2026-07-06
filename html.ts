@@ -1,9 +1,9 @@
 // noinspection JSUnusedGlobalSymbols
-import {tokenize} from "./tokenizer";
+import {tokenize} from "./tokenizer/tokenizer";
 
 // noinspection JSUnusedGlobalSymbols
 export let emmet = {
-    create,
+    create, //todo rename these 2 functions to force them the fail compilation (breaking change)
     create2,
     append,
     insertBefore,
@@ -45,7 +45,7 @@ export interface TextDef {
 
 export type EmmetNode = GroupDef | ElementDef | ListDef | TextDef;
 
-let nested: string[] | undefined = undefined;
+let tokens: string[] | undefined = undefined;
 let lastCreated: Element | undefined = undefined;
 
 function toSelector(node: EmmetNode) {
@@ -77,7 +77,7 @@ function create2(text: string, onIndex?: (index: number) => string, hook?: (el: 
 //find all usages in all projects and fix this (e.g. with a create2() function...but that sucks too...
 
 function create(text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    nested = tokenize(text);
+    tokens = tokenize(text);
     let root = parse();
     //todo: the toSelector has issues.
     let parent = document.querySelector(toSelector(root)) as Element;
@@ -91,7 +91,7 @@ function create(text: string, onIndex?: (index: number) => string, hook?: (el: E
 }
 
 function append(root: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    nested = tokenize(text);
+    tokens = tokenize(text);
     return parseAndBuild(root, onIndex, hook);
 }
 
@@ -108,7 +108,7 @@ function appendChild(parent: HTMLElement, text: string, onIndex?: (index: number
 }
 
 function insertAt(position: InsertPosition, target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    nested = tokenize(text);
+    tokens = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex, hook);
     let first: Node | null = null;
@@ -151,7 +151,7 @@ function parseAndBuild(root: HTMLElement, onIndex?: (index: number) => string, h
 }
 
 function testEmmet(text: string): EmmetNode {
-    nested = tokenize(text);
+    tokens = tokenize(text);
     return parse();
 }
 
@@ -177,7 +177,7 @@ function parseMult() : EmmetNode {
     if(!el)
         return el;
     if(match('*')) {
-        let mustBeNumber =nested!.shift();
+        let mustBeNumber =tokens!.shift();
         if(!mustBeNumber)
             throw "Number expecting after multiplier symbol '*'";
         let count = parseInt(mustBeNumber);
@@ -212,7 +212,7 @@ function parseElement(): EmmetNode {
 
 
 function parseChildDef(): ElementDef {
-    let tag = nested!.shift();
+    let tag = tokens!.shift();
     let id = undefined;
     let atts: AttDef[] = [];
     let classList: string[] = [];
@@ -221,14 +221,14 @@ function parseChildDef(): ElementDef {
     if(!tag)
         throw "Unexpected end of stream. Tag expected.";
 
-    while(nested!.length) {
+    while(tokens!.length) {
         if (match('.')) {
-            let className = nested!.shift();
+            let className = tokens!.shift();
             if(!className)
                 throw "Unexpected end of stream. Class name expected.";
             classList.push(className);
         } else if (match('[')) {
-            atts = getAttributes();
+            atts = parseAttributes();
         } else {
             let token = matchStartsWith('#');
             if(token) {
@@ -254,62 +254,64 @@ function parseDown() : EmmetNode | undefined {
     return undefined;
 }
 
-function getAttributes() {
-    //gather all the attributes
-    let tokens: string[] = [];
-    while(nested!.length) {
-        let prop = nested!.shift()!; // !: length has been checked.
-        if(prop == ']')
-            break;
-        tokens.push(prop);
-    }
-
+function parseAttributes() {
     let attDefs: AttDef[] = [];
-
-    while(tokens.length) {
-        let name = tokens.shift()!; // !: length has been checked.
-        if(name[0] === ',') {
-            throw "Unexpected ',' - don't separate attributes with ','.";
-        }
-        let eq = tokens.shift();
-        let sub: string = "";
-        if(eq === '.') {
-            sub = tokens.shift() ?? "";
-            eq = tokens.shift();
-        }
-        if (eq != '=') {
-            throw "Equal sign expected.";
-        }
-        let value = tokens.shift();
-        if(!value)
-            throw "Value expected";
-        if(value[0] === '"') {
-            value = stripStringDelimiters(value);
-        }
-        attDefs.push({name, sub, value});
-        if(!tokens.length)
+    while (tokens!.length) {
+        let prop = tokens!.shift()!; // !: length has been checked.
+        if (prop == ']')
             break;
+        tokens!.unshift(prop);
+        let att = parseAttribute();
+        if(att)
+            attDefs.push(att);
+        else
+            break; //todo: unexpected EOF?
     }
     return attDefs;
 }
 
+function parseAttribute() {
+    let name = tokens!.shift();
+    if(!name)
+        return null;
+    if(name[0] === ',') {
+        throw "Unexpected ',' - don't separate attributes with ','."; //todo: get line number and pos.
+    }
+    let eq = tokens!.shift();
+    let sub: string = "";
+    if(eq === '.') {
+        sub = tokens!.shift() ?? "";
+        eq = tokens!.shift();
+    }
+    if (eq != '=') {
+        throw "Equal sign expected.";
+    }
+    let value = tokens!.shift();
+    if(!value)
+        throw "Value expected";
+    if(value[0] === '"') {
+        value = stripStringDelimiters(value);
+    }
+    return {name, sub, value} satisfies AttDef as AttDef;
+}
+
 function match(expected: string) {
-    let next = nested!.shift();
+    let next = tokens!.shift();
     if(next === expected)
         return true;
     if(next)
-        nested!.unshift(next);
+        tokens!.unshift(next);
     return false;
 }
 
 function matchStartsWith(expected: string) {
-    let next = nested!.shift();
+    let next = tokens!.shift();
     if(!next)
         return undefined;
     if(next.startsWith(expected))
         return next;
     if(next)
-        nested!.unshift(next);
+        tokens!.unshift(next);
     return undefined;
 }
 

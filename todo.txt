@@ -1,3 +1,42 @@
+* Test FilteredTokenizer
+
+* Refactor getAttributes() to parseAttributes()
+  > don't prefetch the tokens, but use traditional recursive descent.
+
+* Rename nested to tokens and make it non-null.
+
+Rules of indent
+================
+* Equal indent can mean
+  - plus sign
+  - properties of element
+    > extra indents of properties: the indent level can be ignored, as long as its equal or greater than the indent of the element.
+* parenthesis completely reset the indent level.
+* parser should re-use code as much as possible.
+  - parsePlus:
+    > loop all `+` signs, but also consider all equal (or higher) indents as plus signs.
+    > even when using an indent, the plus sign can optionally be used.
+      > so scan for
+        - a plus and indent
+        - or an indent and plus
+
+
+
+Example code
+===============
+1. properties (this should already work)
+---------------
+div
+  #myId
+  .classOne
+  .classTwo
+  {Some text}
+
+
+
+
+
+
 * test excaped chars ( "\}" and "\"")
   > I think they are not handled yet.
     > they are escaped by the tokenizer but not un-escapced back.

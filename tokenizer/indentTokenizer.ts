@@ -1,4 +1,5 @@
-import {Cursor, CursorRange} from "./cursor";
+import {Cursor, CursorRange} from "../cursor";
+import {Tokenizer} from "./tokenizer";
 
 export type TokenType = "EOF" | "UNKNOWN" | "INDENT" | "ID" | "NUMBER" | "STRING" | "(" | ")" | "." | "," | "€" | "$" | "/" | "*" | "+" | "-" | "#";
 
@@ -13,7 +14,7 @@ export function getText(token: Token) {
     return token.cursor.getText(token.pos, token.length);
 }
 
-export class Tokenizer {
+export class IndentTokenizer implements Tokenizer {
     private cursor: Cursor;
 
     constructor(text: string) {
@@ -26,6 +27,12 @@ export class Tokenizer {
 
     public cloneCursor() {
         return Cursor.copy(this.cursor);
+    }
+
+    clone() {
+        let theClone = new IndentTokenizer("");
+        theClone.setCursor(this.cloneCursor());
+        return theClone;
     }
 
     next(): Token | null {

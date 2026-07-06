@@ -1,11 +1,11 @@
 import {describe, test} from 'node:test';
-import {Cursor} from "./cursor";
+import {Cursor} from "../cursor";
 import * as assert from "node:assert";
-import {getText, Tokenizer} from "./indentTokenizer";
+import {getText, IndentTokenizer} from "./indentTokenizer";
 
 describe('Test Tokenizer', () => {
     test('Test Tokenizer', () => {
-        let tok = new Tokenizer(`
+        let tok = new IndentTokenizer(`
         div.theClass
             #theId
             [attr=value]
