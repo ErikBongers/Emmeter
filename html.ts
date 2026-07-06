@@ -1,5 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 import {tokenize} from "./tokenizer/tokenizer";
+import {PeekingTokenizer} from "./tokenizer/PeekingTokenizer";
 
 // noinspection JSUnusedGlobalSymbols
 export let emmet = {
@@ -45,7 +46,6 @@ export interface TextDef {
 
 export type EmmetNode = GroupDef | ElementDef | ListDef | TextDef;
 
-let tokens: string[] | undefined = undefined;
 let lastCreated: Element | undefined = undefined;
 
 function toSelector(node: EmmetNode) {
@@ -77,7 +77,7 @@ function create2(text: string, onIndex?: (index: number) => string, hook?: (el: 
 //find all usages in all projects and fix this (e.g. with a create2() function...but that sucks too...
 
 function create(text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    tokens = tokenize(text);
+    tok = tokenize(text);
     let root = parse();
     //todo: the toSelector has issues.
     let parent = document.querySelector(toSelector(root)) as Element;
@@ -91,7 +91,7 @@ function create(text: string, onIndex?: (index: number) => string, hook?: (el: E
 }
 
 function append(root: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    tokens = tokenize(text);
+    tok = tokenize(text);
     return parseAndBuild(root, onIndex, hook);
 }
 
@@ -108,7 +108,7 @@ function appendChild(parent: HTMLElement, text: string, onIndex?: (index: number
 }
 
 function insertAt(position: InsertPosition, target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    tokens = tokenize(text);
+    tok = tokenize(text);
     let tempRoot = document.createElement("div");
     let result = parseAndBuild(tempRoot, onIndex, hook);
     let first: Node | null = null;
@@ -151,229 +151,235 @@ function parseAndBuild(root: HTMLElement, onIndex?: (index: number) => string, h
 }
 
 function testEmmet(text: string): EmmetNode {
-    tokens = tokenize(text);
-    return parse();
+    let tok = tokenize(text);
+    return tok.parse();
 }
 
-function parse() {
-    return parsePlus() ;
-}
+class Parser {
+    tok: PeekingTokenizer;
+
+    constructor(tok: PeekingTokenizer) {
+        this.tok = tok;
+    }
+
+    parse() {
+        return this.parsePlus();
+    }
 
 //parse a+b+c>d...
-function parsePlus(): EmmetNode {
-    let list = [];
-    while(true) {
-        let el = parseMult();
-        if (!el)
-            return list.length===1 ? list[0] : {list};
-        list.push(el)
-        if(!match('+'))
-            return list.length===1 ? list[0] : {list};
-    }
-}
-
-function parseMult() : EmmetNode {
-    let el = parseElement();
-    if(!el)
-        return el;
-    if(match('*')) {
-        let mustBeNumber =tokens!.shift();
-        if(!mustBeNumber)
-            throw "Number expecting after multiplier symbol '*'";
-        let count = parseInt(mustBeNumber);
-        //wrap el in a count group.
-        return  {
-            count,
-            child: el
-        };
-    } else {
-        return el;
-    }
-}
-
-// parse group or primary element (and children)
-function parseElement(): EmmetNode {
-    let el: EmmetNode;
-    if(match('(')) {
-        el = parsePlus();
-        if(!match(")"))
-            throw "Expected ')'";
-        return el;
-    } else {
-        let text = matchStartsWith('{');
-        if (text) {
-            text = stripStringDelimiters(text);
-            return <TextDef>{text};
-        } else {
-            return parseChildDef();
+    private parsePlus(): EmmetNode {
+        let list = [];
+        while (true) {
+            let el = this.parseMult();
+            if (!el)
+                return list.length === 1 ? list[0] : {list};
+            list.push(el)
+            if (!this.match('+'))
+                return list.length === 1 ? list[0] : {list};
         }
     }
-}
 
-
-function parseChildDef(): ElementDef {
-    let tag = tokens!.shift();
-    let id = undefined;
-    let atts: AttDef[] = [];
-    let classList: string[] = [];
-    let text: string | undefined = undefined;
-
-    if(!tag)
-        throw "Unexpected end of stream. Tag expected.";
-
-    while(tokens!.length) {
-        if (match('.')) {
-            let className = tokens!.shift();
-            if(!className)
-                throw "Unexpected end of stream. Class name expected.";
-            classList.push(className);
-        } else if (match('[')) {
-            atts = parseAttributes();
+    parseMult(): EmmetNode {
+        let el = this.parseElement();
+        if (!el)
+            return el;
+        if (this.match('*')) {
+            let mustBeNumber = this.tok.next();
+            if (!mustBeNumber)
+                throw "Number expecting after multiplier symbol '*'";
+            let count = parseInt(mustBeNumber);
+            //wrap el in a count group.
+            return {
+                count,
+                child: el
+            };
         } else {
-            let token = matchStartsWith('#');
-            if(token) {
-                id = token.substring(1);
+            return el;
+        }
+    }
+
+// parse group or primary element (and children)
+    parseElement(): EmmetNode {
+        let el: EmmetNode;
+        if (this.match('(')) {
+            el = this.parsePlus();
+            if (!this.match(")"))
+                throw "Expected ')'";
+            return el;
+        } else {
+            let text = this.matchStartsWith('{');
+            if (text) {
+                text = this.stripStringDelimiters(text);
+                return <TextDef>{text};
             } else {
-                let token = matchStartsWith('{')
+                return this.parseChildDef();
+            }
+        }
+    }
+
+
+    parseChildDef(): ElementDef {
+        let tag = this.tok!.shift();
+        let id = undefined;
+        let atts: AttDef[] = [];
+        let classList: string[] = [];
+        let text: string | undefined = undefined;
+
+        if (!tag)
+            throw "Unexpected end of stream. Tag expected.";
+
+        while (this.tok!.length) {
+            if (this.match('.')) {
+                let className = this.tok!.shift();
+                if (!className)
+                    throw "Unexpected end of stream. Class name expected.";
+                classList.push(className);
+            } else if (this.match('[')) {
+                atts = this.parseAttributes();
+            } else {
+                let token = this.matchStartsWith('#');
                 if (token) {
-                    text = stripStringDelimiters(token);
+                    id = token.substring(1);
                 } else {
-                    break;
+                    let token = this.matchStartsWith('{')
+                    if (token) {
+                        text = this.stripStringDelimiters(token);
+                    } else {
+                        break;
+                    }
                 }
             }
         }
+        return {tag, id, atts, classList, innerText: text, child: this.parseDown()};
     }
-    return {tag, id, atts, classList, innerText: text, child: parseDown()};
-}
 
 // parse >...
-function parseDown() : EmmetNode | undefined {
-    if(match('>')) {
-        return parsePlus();
-    }
-    return undefined;
-}
-
-function parseAttributes() {
-    let attDefs: AttDef[] = [];
-    while (tokens!.length) {
-        let prop = tokens!.shift()!; // !: length has been checked.
-        if (prop == ']')
-            break;
-        tokens!.unshift(prop);
-        let att = parseAttribute();
-        if(att)
-            attDefs.push(att);
-        else
-            break; //todo: unexpected EOF?
-    }
-    return attDefs;
-}
-
-function parseAttribute() {
-    let name = tokens!.shift();
-    if(!name)
-        return null;
-    if(name[0] === ',') {
-        throw "Unexpected ',' - don't separate attributes with ','."; //todo: get line number and pos.
-    }
-    let eq = tokens!.shift();
-    let sub: string = "";
-    if(eq === '.') {
-        sub = tokens!.shift() ?? "";
-        eq = tokens!.shift();
-    }
-    if (eq != '=') {
-        throw "Equal sign expected.";
-    }
-    let value = tokens!.shift();
-    if(!value)
-        throw "Value expected";
-    if(value[0] === '"') {
-        value = stripStringDelimiters(value);
-    }
-    return {name, sub, value} satisfies AttDef as AttDef;
-}
-
-function match(expected: string) {
-    let next = tokens!.shift();
-    if(next === expected)
-        return true;
-    if(next)
-        tokens!.unshift(next);
-    return false;
-}
-
-function matchStartsWith(expected: string) {
-    let next = tokens!.shift();
-    if(!next)
+    parseDown(): EmmetNode | undefined {
+        if (this.match('>')) {
+            return this.parsePlus();
+        }
         return undefined;
-    if(next.startsWith(expected))
-        return next;
-    if(next)
-        tokens!.unshift(next);
-    return undefined;
-}
+    }
 
-function stripStringDelimiters(text: string) {
-    if(text[0] === "'" || text[0] === '"' || text[0] === '{')
-        return text.substring(1, text.length-1);
-    return text;
-}
+    parseAttributes() {
+        let attDefs: AttDef[] = [];
+        while (tok!.length) {
+            let prop = this.tok!.shift()!; // !: length has been checked.
+            if (prop == ']')
+                break;
+            tok!.unshift(prop);
+            let att = this.parseAttribute();
+            if (att)
+                attDefs.push(att);
+            else
+                break; //todo: unexpected EOF?
+        }
+        return attDefs;
+    }
+
+    parseAttribute() {
+        let name = this.tok!.shift();
+        if (!name)
+            return null;
+        if (name[0] === ',') {
+            throw "Unexpected ',' - don't separate attributes with ','."; //todo: get line number and pos.
+        }
+        let eq = this.tok!.shift();
+        let sub: string = "";
+        if (eq === '.') {
+            sub = this.tok!.shift() ?? "";
+            eq = this.tok!.shift();
+        }
+        if (eq != '=') {
+            throw "Equal sign expected.";
+        }
+        let value = this.tok!.shift();
+        if (!value)
+            throw "Value expected";
+        if (value[0] === '"') {
+            value = this.stripStringDelimiters(value);
+        }
+        return {name, sub, value} satisfies AttDef as AttDef;
+    }
+
+    match(expected: string) {
+        let next = this.tok!.shift();
+        if (next === expected)
+            return true;
+        if (next)
+            tok!.unshift(next);
+        return false;
+    }
+
+    matchStartsWith(expected: string) {
+        let next = this.tok!.shift();
+        if (!next)
+            return undefined;
+        if (next.startsWith(expected))
+            return next;
+        if (next)
+            tok!.unshift(next);
+        return undefined;
+    }
+
+    stripStringDelimiters(text: string) {
+        if (text[0] === "'" || text[0] === '"' || text[0] === '{')
+            return text.substring(1, text.length - 1);
+        return text;
+    }
 
 //CREATION
-function createElement(parent: Element, def: ElementDef, index: number, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    let el = parent.appendChild(document.createElement(def.tag));
-    if (def.id)
-        el.id = addIndex(def.id, index, onIndex);
-    for(let clazz of def.classList) {
-        el.classList.add(addIndex(clazz, index, onIndex));
-    }
-    for (let att of def.atts) {
-        if (att.sub)
-            { // @ts-ignore
+    createElement(parent: Element, def: ElementDef, index: number, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+        let el = parent.appendChild(document.createElement(def.tag));
+        if (def.id)
+            el.id = this.addIndex(def.id, index, onIndex);
+        for (let clazz of def.classList) {
+            el.classList.add(this.addIndex(clazz, index, onIndex));
+        }
+        for (let att of def.atts) {
+            if (att.sub) { // @ts-ignore
                 el[addIndex(att.name, index, onIndex)][addIndex(att.sub, index, onIndex)] = addIndex(att.value, index, onIndex);
+            } else {
+                el.setAttribute(this.addIndex(att.name, index, onIndex), this.addIndex(att.value, index, onIndex));
             }
-        else {
-            el.setAttribute(addIndex(att.name, index, onIndex), addIndex(att.value, index, onIndex));
         }
+        if (def.innerText) {
+            el.appendChild(document.createTextNode(this.addIndex(def.innerText, index, onIndex)));
+        }
+        lastCreated = el;
+        if (hook)
+            hook(el);
+        return el;
     }
-    if(def.innerText) {
-        el.appendChild(document.createTextNode(addIndex(def.innerText, index, onIndex)));
-    }
-    lastCreated = el;
-    if(hook)
-        hook(el);
-    return el;
-}
 
-function buildElement(parent: Element, el: EmmetNode, index: number, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    if("tag" in el) { //ElementDef
-        let created = createElement(parent, el, index, onIndex, hook);
-        if(el.child)
-            buildElement(created, el.child, index, onIndex, hook);
-        return;
-    }
-    if("list" in el) { //ListDef
-        for( let def of el.list) {
-            buildElement(parent, def, index, onIndex, hook);
+    buildElement(parent: Element, el: EmmetNode, index: number, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+        if ("tag" in el) { //ElementDef
+            let created = this.createElement(parent, el, index, onIndex, hook);
+            if (el.child)
+                this.buildElement(created, el.child, index, onIndex, hook);
+            return;
+        }
+        if ("list" in el) { //ListDef
+            for (let def of el.list) {
+                this.buildElement(parent, def, index, onIndex, hook);
+            }
+        }
+        if ("count" in el) { //GroupDef
+            for (let i = 0; i < el.count; i++) {
+                this.buildElement(parent, el.child, i, onIndex, hook);
+            }
+        }
+        if ("text" in el) { //TextDef
+            parent.appendChild(document.createTextNode(this.addIndex(el.text, index, onIndex)));
+            return;
         }
     }
-    if("count" in el) { //GroupDef
-        for(let i = 0; i < el.count; i++) {
-            buildElement(parent, el.child, i, onIndex, hook);
-        }
-    }
-    if("text" in el) { //TextDef
-        parent.appendChild(document.createTextNode(addIndex(el.text, index, onIndex)));
-        return;
-    }
-}
 
-function addIndex(text: string, index: number, onIndex?: (index: number) => string) {
-    if(onIndex) {
-        let result = onIndex(index);
-        text = text.replace("$$", result);
+    addIndex(text: string, index: number, onIndex?: (index: number) => string) {
+        if (onIndex) {
+            let result = onIndex(index);
+            text = text.replace("$$", result);
+        }
+        return text.replace("$", (index + 1).toString());
     }
-    return text.replace("$", (index+1).toString());
 }

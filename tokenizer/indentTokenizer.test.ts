@@ -53,5 +53,14 @@ describe('Test Tokenizer', () => {
         assert.equal(getText(res!), "Some text");
         res = tok.next();
         assert.equal(res,null);
+
+        tok = new IndentTokenizer(`
+            div*123`);
+        res = tok.next();
+        res = tok.next();
+        res = tok.next();
+        res = tok.next();
+        assert.equal(res?.type,"NUMBER");
+        assert.equal(getText(res!), "123");
     });
 });

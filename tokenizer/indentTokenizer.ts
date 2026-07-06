@@ -41,6 +41,9 @@ export class IndentTokenizer implements Tokenizer {
         let id = this.eatId(char);
         if(id)
             return id;
+        let num = this.eatInteger(char);
+        if(num)
+            return num;
         switch (char) {
             case "":
                 return null;
@@ -101,6 +104,22 @@ export class IndentTokenizer implements Tokenizer {
             }
             return {
                 type: "ID",
+                cursor: this.cursor,
+                pos,
+                length: this.cursor.pos - pos+1,
+            } satisfies Token as Token;
+        }
+        return null;
+    }
+
+    private eatInteger(char: string) {
+        let pos = this.cursor.pos;
+        if(char.match(/[0-9]/)) {
+            while (this.cursor.peek().match(/[0-9]/)) {
+                this.cursor.next();
+            }
+            return {
+                type: "NUMBER",
                 cursor: this.cursor,
                 pos,
                 length: this.cursor.pos - pos+1,
