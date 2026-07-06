@@ -1,7 +1,7 @@
-import {Cursor, CursorRange} from "../cursor";
+import {Cursor, CursorRange} from "./cursor";
 import {Tokenizer} from "./tokenizer";
 
-export type TokenType = "EOF" | "UNKNOWN" | "INDENT" | "ID" | "NUMBER" | "STRING" | "(" | ")" | "." | "," | "€" | "$" | "/" | "*" | "+" | "-" | "#";
+export type TokenType = "EOF" | "UNKNOWN" | "INDENT" | "ID" | "NUMBER" | "STRING" | "(" | ")" | "." | "," | "€" | "$" | "/" | "*" | "+" | "-" | "#" | "[" | "]" | ">" | "=";
 
 export interface Token {
     type: TokenType;

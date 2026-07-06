@@ -1,5 +1,5 @@
 import {describe, test} from 'node:test';
-import {Cursor} from "../cursor";
+import {Cursor} from "./cursor";
 import * as assert from "node:assert";
 import {getText, IndentTokenizer} from "./indentTokenizer";
 
