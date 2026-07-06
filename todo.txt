@@ -1,5 +1,3 @@
-* Test FilteredTokenizer
-
 * Refactor getAttributes() to parseAttributes()
   > don't prefetch the tokens, but use traditional recursive descent.
 

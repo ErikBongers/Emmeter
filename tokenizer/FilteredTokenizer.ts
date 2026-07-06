@@ -12,7 +12,7 @@ export class FilteredTokenizer implements Tokenizer {
 
     next(): Token | null {
         let token = this.tokenizer.next();
-        if(token && this.exclude(token))
+        if(token && !this.exclude(token))
             return this.next();
         return token;
     }
