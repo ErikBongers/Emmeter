@@ -20,9 +20,17 @@ describe('Test Indent Parser', () => {
                 span1#theOne.classOne
                 span2.classTwo#theTwo
         `);
+
+        printIndent(`
+            div.parent
+                div.child1
+                    span1#theOne.classOne
+                    span2.classTwo#theTwo
+                div.child2
+                    span3#theThree.classThree
+                    span4.classFour#theFour
+        `);
     });
-
-
 });
 
 describe('Test Non-Indent Parser', () => {
