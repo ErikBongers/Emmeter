@@ -1,42 +1,10 @@
 * parse classes, IDs and texts properties, regardless of indent, as long as it's deeper than the tag.
-
-Rules of indent
-================
-* Equal indent can mean
-  - plus sign
-  - properties of element
-    > extra indents of properties: the indent level can be ignored, as long as its equal or greater than the indent of the element.
-* parenthesis completely reset the indent level.
-* parser should re-use code as much as possible.
-  - parsePlus:
-    > loop all `+` signs, but also consider all equal (or higher) indents as plus signs.
-    > even when using an indent, the plus sign can optionally be used.
-      > so scan for
-        - a plus and indent
-        - or an indent and plus
-
-
-
-Example code
-===============
-1. properties (this should already work)
----------------
-div
-  #myId
-  .classOne
-  .classTwo
-  {Some text}
-
-
-
-
-
+* test combination of indent and parenthesis.
+  > parenthesis completely reset the indent level.
 
 * test excaped chars ( "\}" and "\"")
   > I think they are not handled yet.
     > they are escaped by the tokenizer but not un-escapced back.
-
-* allow multiline
 
 * attribute names can have the format xxx.xxx.xxx.xxx
 
