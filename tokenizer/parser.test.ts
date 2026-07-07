@@ -7,8 +7,9 @@ import {IndentTokenizer} from "./indentTokenizer";
 import {printNode} from "../test";
 
 describe('Test Parser', () => {
+
+
     test('Test non-indent', () => {
-        //todo: should error...or do we allow it? In any case, it currently IGNORES the children!
         assert.throws(() => printNonIndent(`div(span)`), Error);
         printNonIndent(`
             div>(
@@ -23,6 +24,8 @@ describe('Test Parser', () => {
             )
         `);
     });
+
+
     test('Test trailing whitespace', () => {
         printNonIndent(`
             div>(
@@ -30,6 +33,8 @@ describe('Test Parser', () => {
             )
         `.replaceAll("_", " "));
     });
+
+
 });
 
 function printNonIndent(text: string) {
