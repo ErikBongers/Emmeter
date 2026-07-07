@@ -111,8 +111,8 @@ export class IndentTokenizer implements Tokenizer {
 
     private eatId(char: string) {
         let pos = this.cursor.pos;
-        if(char.match(/[a-zA-Z]/)) {
-            while (this.cursor.peek().match(/[a-zA-Z0-9_]/)) {
+        if(char.match(/[a-zA-Z\-]/)) {
+            while (this.cursor.peek().match(/[a-zA-Z0-9_\-]/)) {
                 this.cursor.next();
             }
             return {
