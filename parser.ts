@@ -39,7 +39,11 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
     }
 
     parse() {
-        return this.parsePlus(0);
+        let res = this.parsePlus(0);
+        let next = this.tok.next();
+        if(next)
+            this.throwAt(`Unexpected token: ${next.type}`, next);
+        return res;
     }
 
     //parse a+b+c>d...
@@ -64,10 +68,11 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         if (!el) {
             return el;
         }
-        if (this.match("*")) {
+        let starToken = this.match("*");
+        if (starToken) {
             let mustBeNumber = this.tok.next();
             if (!mustBeNumber) {
-                throw "Number expecting after multiplier symbol '*'";
+                this.throwAt("Number expecting after multiplier symbol '*'", starToken);
             }
             let count = parseInt(getText(mustBeNumber));
             //wrap el in a count group.
@@ -86,7 +91,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         if (this.match("(")) {
             el = this.parsePlus(parentIndent);
             if (!this.match(")")) {
-                throw "Expected ')'";
+                this.throwAt("Expected ')'", this.tok.peek());
             }
             return el;
         } else {
@@ -108,14 +113,14 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         let innerText: string | undefined = undefined;
 
         if (!tag) {
-            throw "Unexpected end of stream. Tag expected.";
+            this.throwAt("Unexpected end of stream. Tag expected.", tag);
         }
 
         while (this.tok.peek()) {
             if (this.match(".")) {
                 let className = this.tok.next();
                 if (!className) {
-                    throw "Unexpected end of stream. Class name expected.";
+                    this.throwAt("Unexpected end of stream. Class name expected.", className);
                 }
                 classList.push(getText(className));
                 continue;
@@ -127,7 +132,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
             if (this.match("#")) {
                 let idToken = this.tok.next();
                 if (!idToken) {
-                    throw "Unexpected end of stream. ID expected.";
+                    this.throwAt("Unexpected end of stream. ID expected.", idToken);
                 }
                 id = getText(idToken);
                 continue;
@@ -180,11 +185,11 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         }
         let name = getText(nameToken);
         if (name[0] === ",") {
-            throw "Unexpected ',' - don't separate attributes with ','."; //todo: get line number and pos.
+            this.throwAt("Unexpected ',' - don't separate attributes with ','.", nameToken);
         }
         let eq = this.tok.next();
         if (!eq) {
-            throw "Unexpected end of stream. '=' expected.";
+            this.throwAt("Unexpected end of stream. '=' expected.", eq);
         }
         let subToken: Token | null;
         let sub: string = "";
@@ -196,11 +201,11 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
             eq = this.tok.next();
         }
         if (eq?.type != "=") {
-            throw "Equal sign expected.";
+            this.throwAt("Equal sign expected.", eq);
         }
         let valueToken = this.tok.next();
         if (!valueToken) {
-            throw "Value expected";
+            this.throwAt("Value expected", valueToken);
         }
         let value = getText(valueToken);
         if (value[0] === '"') {
@@ -224,8 +229,18 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         }
         return text;
     }
-}
 
-export let internal = {
-    Parser: typeof Parser,
+    printLocation(token: Token) {
+        let {line, col} = token.cursor.getLocation(token.pos);
+        return `line ${line}, col ${col}\n${token.cursor.getLine(token.pos)}\n${" ".repeat(col-1)}^`;
+    }
+
+    throwAt(mesagee: string, token: Token | null): never {
+        if(token)
+            throw `${mesagee}\n  at ${this.printLocation(token)}`;
+        else
+            throw `${mesagee}\n  at EOF`;
+    }
+
+
 }

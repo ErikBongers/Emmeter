@@ -7,15 +7,18 @@ import {printNode} from "../test";
 
 describe('Test Parser', () => {
     test('Test non-indent', () => {
+        //todo: should error...or do we allow it? In any case, it currently IGNORES the children!
+        printNonIndent(`
+        
+            div(span)
+            xxx
+            yy
+        `);
         printNonIndent(`
             div>(
                 span+
                 span
             )                    
-        `);
-        //todo: should error...or do we allow it? In any case, it currently IGNORES the children!
-        printNonIndent(`
-            div(span)                    
         `);
         printNonIndent(`
             div.theClass>(

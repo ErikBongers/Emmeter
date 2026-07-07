@@ -80,4 +80,36 @@ export class Cursor {
         return {start, length: this.currentPos-start+1} satisfies CursorRange as CursorRange;
     }
 
+    getLocation(pos: number) {
+        let line = 1;
+        let col = 1;
+        for(let i = 0; i < pos; i++) {
+            if(this.text[i] == '\n') {
+                line++;
+                col = 1;
+            } else {
+                col++;
+            }
+        }
+        return {line, col};
+    }
+
+    getLine(pos: number): string {
+        let loc = this.getLocation(pos);
+        let start = 0;
+        let end = 0;
+        for(let i = 0; i < this.length; i++) {
+            if(this.text[i] == '\n') {
+                if(loc.line > 1) {
+                    start = i+1;
+                    loc.line--;
+                } else {
+                    end = i;
+                    break;
+                }
+            }
+        }
+        return this.text.substring(start, end);
+    }
+
 }
