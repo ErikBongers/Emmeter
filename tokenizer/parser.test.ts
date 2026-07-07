@@ -24,8 +24,10 @@ describe('Test Parser', () => {
             )
         `);
         printNonIndent(`
-            div[attr="value"]
+            div[attr="value" attr2="value2"]
         `);
+        printNonIndent(`dash-element.dash-class#dash-id`);
+        printNonIndent(`underscore_element.underscore_class#underscore_id`);
     });
 
 
