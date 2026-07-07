@@ -68,8 +68,8 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         }
     }
 
-    parseMult(parentIndent: number): EmmetNode {
-        let el = this.parseElementGroup(parentIndent);
+    parseMult(currentIndent: number): EmmetNode {
+        let el = this.parseElementGroup(currentIndent);
         if (!el) {
             return el;
         }
@@ -91,10 +91,10 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
     }
 
     // parse group or primary element (and children)
-    parseElementGroup(parentIndent: number): EmmetNode {
+    parseElementGroup(currentIndent: number): EmmetNode {
         let el: EmmetNode;
         if (this.match("(")) {
-            el = this.parsePlus(parentIndent);
+            el = this.parsePlus(currentIndent);
             if (!this.match(")")) {
                 this.throwAt("Expected ')'", this.tok.peek());
             }
@@ -103,7 +103,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
 
         let indentToken = this.tok.peek();
         if(indentToken?.type == "INDENT") {
-            if(indentToken.length > parentIndent) {
+            if(indentToken.length > currentIndent) {
                 this.tok.next();
                 return this.parsePlus(indentToken.length); //go one level deeper (like parenthesis)
             }
@@ -114,11 +114,11 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
             let text = getText(textToken);
             return <TextDef> { text };
         } else {
-            return this.parseElement(parentIndent);
+            return this.parseElement(currentIndent);
         }
     }
 
-    parseElement(parentIndent: number): ElementDef {
+    parseElement(currentIndent: number): ElementDef {
         let tag = this.tok.next();
         let id = undefined;
         let atts: AttDef[] = [];
@@ -139,7 +139,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
                 continue;
             }
             if (this.match("[")) {
-                atts = this.parseAttributes();
+                atts = this.parseAttributes(currentIndent);
                 continue;
             }
             if (this.match("#")) {
@@ -163,30 +163,30 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
             atts,
             classList,
             innerText,
-            child: this.parseDown(parentIndent),
+            child: this.parseDown(currentIndent),
         };
     }
 
     // parse >...
-    parseDown(parentIndent: number): EmmetNode | undefined {
+    parseDown(currentIndent: number): EmmetNode | undefined {
         if (this.match(">")) {
-            return this.parsePlus(parentIndent);
+            return this.parsePlus(currentIndent);
         }
         let indentToken = this.tok.peek();
-        if(indentToken?.type == "INDENT" && indentToken?.length > parentIndent) {
+        if(indentToken?.type == "INDENT" && indentToken?.length > currentIndent) {
             this.tok.next();
             return this.parsePlus(indentToken?.length);
         }
         return undefined;
     }
 
-    parseAttributes() {
+    parseAttributes(currentIndent: number) {
         let attDefs: AttDef[] = [];
         while (true) {
             if (this.match("]")) {
                 break;
             }
-            let att = this.parseAttribute();
+            let att = this.parseAttribute(currentIndent);
             if (att) {
                 attDefs.push(att);
             } else {
@@ -196,7 +196,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         return attDefs;
     }
 
-    parseAttribute() {
+    parseAttribute(currentIndent: number) {
         let nameToken = this.tok.next();
         if (!nameToken) {
             return null;

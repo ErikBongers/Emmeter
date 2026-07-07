@@ -6,79 +6,74 @@ import {ElementDef, EmmetNode, Parser} from "./parser";
 
 // noinspection JSUnusedGlobalSymbols
 export let emmet = {
-    // create, //todo rename these 2 functions to force them the fail compilation (breaking change)
-    create2,
+    // create, //depracated because confusing API.
+    createElement,
     append,
     insertBefore,
     insertAfter,
     appendChild,
+    indent: {
+        createElement: createElement_indent,
+        append: append_indent,
+        insertBefore: insertBefore_indent,
+        insertAfter: insertAfter_indent,
+        appendChild: appendChild_indent,
+    }
 };
-
 
 let lastCreated: Element | undefined = undefined;
 
-function toSelector(node: EmmetNode) {
-    if(!('tag' in node)) {
-        throw "TODO: not yet implemented.";
-    }
-    //todo: the selector may be just a tag name which is just too random.
-    // > either create a temp parent in emmet.create() instead of this toSelector() hack.
-    let selector = "";
-    if(node.tag)
-        selector += node.tag;
-    if(node.id)
-        selector += "#" + node.id;
-    if(node.classList.length>0) {
-        selector += "." + node.classList.join(".");
-    }
-    return selector;
+function createElement(text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+    return createOnTempParent(new PeekingTokenizer(new FilteredTokenizer(new IndentTokenizer(text), (t) => t.type != "INDENT")), onIndex, hook);
 }
 
-function create2(text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+function createElement_indent(text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+    return createOnTempParent(new PeekingTokenizer(new IndentTokenizer(text)), onIndex, hook);
+}
+
+function createOnTempParent(tok: PeekingTokenizer, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     let tempDiv = document.createElement("div");
-    let result = appendChild(tempDiv, text, onIndex, hook);
+    let result = insertAt(tok,"beforeend", tempDiv, onIndex, hook);
     let first = result.first as HTMLElement;
     first.remove();
     return first;
 }
 
-//todo: this creates items under the ALREADY EXISTING root element in the string. That's really not what you expect.
-//find all usages in all projects and fix this (e.g. with a create2() function...but that sucks too...
-
-function create(text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    let tok = new PeekingTokenizer(new FilteredTokenizer(new IndentTokenizer(text), (t) => t.type != "INDENT"));
-    let parser = new Parser(tok);
-    let root = parser.parse();
-    //todo: the toSelector has issues.
-    let parent = document.querySelector(toSelector(root)) as Element;
-    if("tag" in root) {
-        root = root.child!; // a tag MUST have a child.
-    } else {
-        throw "root should be a single element.";
-    }
-    buildElement(parent, root, 1, onIndex, hook);
-    return {root: parent, last: lastCreated as Element};
+function append(root: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+    return parseAndBuild(createTokenizer(text), root, onIndex, hook);
 }
 
-function append(root: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    return parseAndBuild(text, root, onIndex, hook);
+function append_indent(root: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+    return parseAndBuild(createIndentTokenizer(text), root, onIndex, hook);
 }
 
 function insertBefore(target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    return insertAt("beforebegin", target, text, onIndex, hook);
+    return insertAt(createTokenizer(text),"beforebegin", target, onIndex, hook);
+}
+
+function insertBefore_indent(target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+    return insertAt(createIndentTokenizer(text),"beforebegin", target, onIndex, hook);
 }
 
 function insertAfter(target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    return insertAt("afterend", target, text, onIndex, hook);
+    return insertAt(createTokenizer(text),"afterend", target, onIndex, hook);
+}
+
+function insertAfter_indent(target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+    return insertAt(createIndentTokenizer(text),"afterend", target, onIndex, hook);
 }
 
 function appendChild(parent: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    return insertAt("beforeend", parent, text, onIndex, hook);
+    return insertAt(createTokenizer(text),"beforeend", parent, onIndex, hook);
 }
 
-function insertAt(position: InsertPosition, target: Element, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+function appendChild_indent(parent: HTMLElement, text: string, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+    return insertAt(createIndentTokenizer(text),"beforeend", parent, onIndex, hook);
+}
+
+function insertAt(tok: PeekingTokenizer, position: InsertPosition, target: Element, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     let tempRoot = document.createElement("div");
-    let result = parseAndBuild(text, tempRoot, onIndex, hook);
+    let result = parseAndBuild(tok, tempRoot, onIndex, hook);
     let first: Node | null = null;
     let insertPos: Node = target as Node;
     let children = [...tempRoot.childNodes]; //we'll be removing children from tempRoot, so copy the list.
@@ -113,8 +108,15 @@ function insertAdjacentText(target: Node, position: InsertPosition, text: string
     }
 }
 
-function parseAndBuild(text: string, root: HTMLElement, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
-    let tok = new PeekingTokenizer(new FilteredTokenizer(new IndentTokenizer(text), (t) => t.type != "INDENT"));
+function createTokenizer(text: string){
+    return new PeekingTokenizer(new FilteredTokenizer(new IndentTokenizer(text), (t) => t.type != "INDENT"));
+}
+
+function createIndentTokenizer(text: string){
+    return new PeekingTokenizer(new IndentTokenizer(text));
+}
+
+function parseAndBuild(tok: PeekingTokenizer, root: HTMLElement, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     let parser = new Parser(tok);
     buildElement(root, parser.parse(), 1, onIndex, hook);
     return {root, last: lastCreated as Element};
@@ -122,7 +124,7 @@ function parseAndBuild(text: string, root: HTMLElement, onIndex?: (index: number
 
 function buildElement(parent: Element, el: EmmetNode, index: number, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     if ("tag" in el) { //ElementDef
-        let created = createElement(parent, el, index, onIndex, hook);
+        let created = appendChildElement(parent, el, index, onIndex, hook);
         if (el.child)
             buildElement(created, el.child, index, onIndex, hook);
         return;
@@ -151,7 +153,7 @@ function addIndex(text: string, index: number, onIndex?: (index: number) => stri
     return text.replace("$", (index + 1).toString());
 }
 
-function  createElement(parent: Element, def: ElementDef, index: number, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
+function  appendChildElement(parent: Element, def: ElementDef, index: number, onIndex?: (index: number) => string, hook?: (el: Element) => void) {
     let el = parent.appendChild(document.createElement(def.tag));
     if (def.id)
         el.id = addIndex(def.id, index, onIndex);

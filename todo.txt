@@ -1,3 +1,5 @@
+* parse classes, IDs and texts properties, regardless of indent, as long as it's deeper than the tag.
+
 Rules of indent
 ================
 * Equal indent can mean
