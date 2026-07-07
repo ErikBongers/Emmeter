@@ -97,7 +97,7 @@ export class Cursor {
     getLine(pos: number): string {
         let loc = this.getLocation(pos);
         let start = 0;
-        let end = 0;
+        let end = this.length;
         for(let i = 0; i < this.length; i++) {
             if(this.text[i] == '\n') {
                 if(loc.line > 1) {
