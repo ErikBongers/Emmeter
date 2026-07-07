@@ -1,8 +1,3 @@
-* Refactor getAttributes() to parseAttributes()
-  > don't prefetch the tokens, but use traditional recursive descent.
-
-* Rename nested to tokens and make it non-null.
-
 Rules of indent
 ================
 * Equal indent can mean

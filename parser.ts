@@ -39,14 +39,14 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
     }
 
     parse() {
-        return this.parsePlus();
+        return this.parsePlus(0);
     }
 
     //parse a+b+c>d...
-    private parsePlus(): EmmetNode {
+    private parsePlus(parentIndent: number): EmmetNode {
         let list = [];
         while (true) {
-            let el = this.parseMult();
+            let el = this.parseMult(parentIndent);
             if (!el) {
                 return list.length === 1 ? list[0] : { list };
             }
@@ -59,8 +59,8 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         }
     }
 
-    parseMult(): EmmetNode {
-        let el = this.parseElement();
+    parseMult(parentIndent: number): EmmetNode {
+        let el = this.parseElement(parentIndent);
         if (!el) {
             return el;
         }
@@ -81,10 +81,10 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
     }
 
     // parse group or primary element (and children)
-    parseElement(): EmmetNode {
+    parseElement(parentIndent: number): EmmetNode {
         let el: EmmetNode;
         if (this.match("(")) {
-            el = this.parsePlus();
+            el = this.parsePlus(parentIndent);
             if (!this.match(")")) {
                 throw "Expected ')'";
             }
@@ -95,12 +95,12 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
                 let text = getText(textToken);
                 return <TextDef> { text };
             } else {
-                return this.parseElementProperties();
+                return this.parseElementProperties(parentIndent);
             }
         }
     }
 
-    parseElementProperties(): ElementDef {
+    parseElementProperties(parentIndent: number): ElementDef {
         let tag = this.tok.next();
         let id = undefined;
         let atts: AttDef[] = [];
@@ -142,14 +142,14 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
             atts,
             classList,
             innerText,
-            child: this.parseDown(),
+            child: this.parseDown(parentIndent),
         };
     }
 
     // parse >...
-    parseDown(): EmmetNode | undefined {
+    parseDown(parentIndent: number): EmmetNode | undefined {
         if (this.match(">")) {
-            return this.parsePlus();
+            return this.parsePlus(parentIndent);
         }
         return undefined;
     }
@@ -221,4 +221,8 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         }
         return text;
     }
+}
+
+export let internal = {
+    Parser: typeof Parser,
 }

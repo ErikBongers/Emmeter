@@ -1,5 +1,4 @@
 import {describe, test} from 'node:test';
-import * as assert from "node:assert";
 import {Parser} from "../parser";
 import {PeekingTokenizer} from "./PeekingTokenizer";
 import {FilteredTokenizer} from "./FilteredTokenizer";
@@ -11,9 +10,9 @@ describe('Test Parser', () => {
         let parser = new Parser(new PeekingTokenizer(
             new FilteredTokenizer(
                 new IndentTokenizer(`
-                        divx.theClass>(
-                            span#spanOne+
-                            span#spanTwo
+                        div.theClass>(
+                            span#spanOne{One}+
+                            span#spanTwo{Two}
                         )                    
                     `),
                 (t) => t.type != "INDENT")));
