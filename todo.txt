@@ -1,4 +1,6 @@
 * parse classes, IDs and texts properties, regardless of indent, as long as it's deeper than the tag.
+  > requires double peek().
+
 * test combination of indent and parenthesis.
   > parenthesis completely reset the indent level.
 
