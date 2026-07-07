@@ -60,7 +60,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
     }
 
     parseMult(parentIndent: number): EmmetNode {
-        let el = this.parseElement(parentIndent);
+        let el = this.parseElementGroup(parentIndent);
         if (!el) {
             return el;
         }
@@ -81,7 +81,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
     }
 
     // parse group or primary element (and children)
-    parseElement(parentIndent: number): EmmetNode {
+    parseElementGroup(parentIndent: number): EmmetNode {
         let el: EmmetNode;
         if (this.match("(")) {
             el = this.parsePlus(parentIndent);
@@ -95,12 +95,12 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
                 let text = getText(textToken);
                 return <TextDef> { text };
             } else {
-                return this.parseElementProperties(parentIndent);
+                return this.parseElement(parentIndent);
             }
         }
     }
 
-    parseElementProperties(parentIndent: number): ElementDef {
+    parseElement(parentIndent: number): ElementDef {
         let tag = this.tok.next();
         let id = undefined;
         let atts: AttDef[] = [];
