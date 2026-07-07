@@ -23,6 +23,13 @@ describe('Test Parser', () => {
             )
         `);
     });
+    test('Test trailing whitespace', () => {
+        printNonIndent(`
+            div>(
+                span_______
+            )
+        `.replaceAll("_", " "));
+    });
 });
 
 function printNonIndent(text: string) {

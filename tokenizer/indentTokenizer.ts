@@ -59,6 +59,9 @@ export class IndentTokenizer implements Tokenizer {
                     };
                 }
                 return null;
+            case ' ': //keep this AFTER the new line check.
+                this.skipSpaces();
+                return this.next();
             case '>':
             case '+':
             case '[':
