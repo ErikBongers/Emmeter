@@ -12,8 +12,13 @@ describe('Test Indent Parser', () => {
     test('Test indent', () => {
         printIndent(`
             div
-                span1
-                span2
+                span1#theOne.classOne
+                span2.classTwo#theTwo
+        `);
+        printIndent(`
+            div>
+                span1#theOne.classOne
+                span2.classTwo#theTwo
         `);
     });
 
