@@ -1,3 +1,5 @@
+* trailing whitespace in multiline text returns token UNKNOWN.
+
 Rules of indent
 ================
 * Equal indent can mean

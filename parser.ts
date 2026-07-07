@@ -237,9 +237,9 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
 
     throwAt(mesagee: string, token: Token | null): never {
         if(token)
-            throw `${mesagee}\n  at ${this.printLocation(token)}`;
+            throw new Error(`${mesagee}\n  at ${this.printLocation(token)}`);
         else
-            throw `${mesagee}\n  at EOF`;
+            throw new Error(`${mesagee}\n  at EOF`);
     }
 
 

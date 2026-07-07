@@ -1,4 +1,5 @@
 import {describe, test} from 'node:test';
+import * as assert from "node:assert";
 import {Parser} from "../parser";
 import {PeekingTokenizer} from "./PeekingTokenizer";
 import {FilteredTokenizer} from "./FilteredTokenizer";
@@ -8,18 +9,18 @@ import {printNode} from "../test";
 describe('Test Parser', () => {
     test('Test non-indent', () => {
         //todo: should error...or do we allow it? In any case, it currently IGNORES the children!
-        printNonIndent(`div(span)`);
+        assert.throws(() => printNonIndent(`div(span)`), Error);
         printNonIndent(`
             div>(
                 span+
                 span
-            )                    
+            )
         `);
         printNonIndent(`
             div.theClass>(
                 span#spanOne{One}+
                 span#spanTwo{Two}
-            )                    
+            )
         `);
     });
 });
