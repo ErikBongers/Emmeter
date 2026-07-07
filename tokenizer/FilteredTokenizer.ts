@@ -18,6 +18,6 @@ export class FilteredTokenizer implements Tokenizer {
     }
 
     clone(): Tokenizer {
-        return this.tokenizer.clone();
+        return new FilteredTokenizer(this.tokenizer.clone(), this.exclude);
     }
 }

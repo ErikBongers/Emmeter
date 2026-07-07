@@ -53,6 +53,8 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
             list.push(el);
             if (!this.match("+")) {
                 return list.length === 1 ? list[0] : { list };
+            } else {
+                debugger;
             }
         }
     }

@@ -11,11 +11,13 @@ describe('Test Parser', () => {
         let parser = new Parser(new PeekingTokenizer(
             new FilteredTokenizer(
                 new IndentTokenizer(`
-                        divx.theClass>
-                            span#spanId                    
+                        divx.theClass>(
+                            span#spanOne+
+                            span#spanTwo
+                        )                    
                     `),
                 (t) => t.type != "INDENT")));
         let ast = parser.parse();
-        printNode(ast);
+        printNode(ast, 0);
     });
 });
