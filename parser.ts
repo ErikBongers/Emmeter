@@ -47,19 +47,24 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
     }
 
     //parse a+b+c>d...
-    private parsePlus(parentIndent: number): EmmetNode {
+    private parsePlus(currentIndent: number): EmmetNode {
         let list = [];
         while (true) {
-            let el = this.parseMult(parentIndent);
+            let el = this.parseMult(currentIndent);
             if (!el) {
                 return list.length === 1 ? list[0] : { list };
             }
             list.push(el);
-            if (!this.match("+")) {
-                return list.length === 1 ? list[0] : { list };
-            } else {
-                debugger;
+            if (this.match("+")) {
+                continue;
             }
+            let indentToken = this.tok.peek();
+            if (indentToken?.type == "INDENT" && indentToken?.length == currentIndent) {
+                this.tok.next();
+                continue; //same level, treat it like a `+`.
+            }
+
+            return list.length === 1 ? list[0] : {list};
         }
     }
 
@@ -94,14 +99,22 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
                 this.throwAt("Expected ')'", this.tok.peek());
             }
             return el;
-        } else {
-            let textToken = this.match("TEXT");
-            if (textToken) {
-                let text = getText(textToken);
-                return <TextDef> { text };
-            } else {
-                return this.parseElement(parentIndent);
+        }
+
+        let indentToken = this.tok.peek();
+        if(indentToken?.type == "INDENT") {
+            if(indentToken.length > parentIndent) {
+                this.tok.next();
+                return this.parsePlus(indentToken.length); //go one level deeper (like parenthesis)
             }
+        }
+
+        let textToken = this.match("TEXT");
+        if (textToken) {
+            let text = getText(textToken);
+            return <TextDef> { text };
+        } else {
+            return this.parseElement(parentIndent);
         }
     }
 
@@ -158,6 +171,11 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
     parseDown(parentIndent: number): EmmetNode | undefined {
         if (this.match(">")) {
             return this.parsePlus(parentIndent);
+        }
+        let indentToken = this.tok.peek();
+        if(indentToken?.type == "INDENT" && indentToken?.length > parentIndent) {
+            this.tok.next();
+            return this.parsePlus(indentToken?.length);
         }
         return undefined;
     }
@@ -223,7 +241,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
             return this.tok.next()!;
         }
 
-        return false;
+        return null;
     }
 
     stripStringDelimiters(text: string) {
