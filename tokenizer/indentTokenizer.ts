@@ -1,7 +1,7 @@
 import {Cursor, CursorRange} from "./cursor";
 import {Tokenizer} from "./tokenizer";
 
-export type TokenType = "EOF" | "UNKNOWN" | "INDENT" | "ID" | "NUMBER" | "STRING" | "(" | ")" | "." | "," | "€" | "$" | "/" | "*" | "+" | "-" | "#" | "[" | "]" | ">" | "=";
+export type TokenType = "EOF" | "UNKNOWN" | "INDENT" | "ID" | "NUMBER" | "TEXT" | "STRING" | "(" | ")" | "." | "," | "€" | "$" | "/" | "*" | "+" | "-" | "#" | "[" | "]" | ">" | "=";
 
 export interface Token {
     type: TokenType;
@@ -82,13 +82,23 @@ export class IndentTokenizer implements Tokenizer {
                 found = this.cursor.getTo("}");
                 if(found) {
                     return {
-                        type: "STRING",
+                        type: "TEXT",
                         cursor: this.cursor,
                         pos: found.start,
                         length: found.length-1,
                     }
                 }
                 return null;//todo: error.
+            case '"':
+                found = this.cursor.getTo('"');//todo: handle escape chars.
+                if(found) {
+                    return {
+                        type: "STRING",
+                        cursor: this.cursor,
+                        pos: found.start,
+                        length: found.length-1,
+                    }
+                }
             default:
                 return {
                     type: "UNKNOWN",

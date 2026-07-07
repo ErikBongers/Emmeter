@@ -23,6 +23,9 @@ describe('Test Parser', () => {
                 span#spanTwo{Two}
             )
         `);
+        printNonIndent(`
+            div[attr="value"]
+        `);
     });
 
 

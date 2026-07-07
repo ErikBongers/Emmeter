@@ -95,7 +95,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
             }
             return el;
         } else {
-            let textToken = this.match("STRING");
+            let textToken = this.match("TEXT");
             if (textToken) {
                 let text = getText(textToken);
                 return <TextDef> { text };
@@ -137,7 +137,7 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
                 id = getText(idToken);
                 continue;
             }
-            let textToken = this.match("STRING");
+            let textToken = this.match("TEXT");
             if (textToken) {
                 innerText = getText(textToken);
                 continue;
@@ -206,6 +206,9 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
         let valueToken = this.tok.next();
         if (!valueToken) {
             this.throwAt("Value expected", valueToken);
+        }
+        if(valueToken.type != "STRING" && valueToken.type != "NUMBER") {
+            this.throwAt(`Value should be STRING or NUMBER. Found ${valueToken.type}.`, valueToken);
         }
         let value = getText(valueToken);
         if (value[0] === '"') {
