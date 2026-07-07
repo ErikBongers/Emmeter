@@ -118,23 +118,26 @@ export class Parser { //todo: try to get rid of the export. It's only there for 
                     throw "Unexpected end of stream. Class name expected.";
                 }
                 classList.push(getText(className));
-            } else if (this.match("[")) {
+                continue;
+            }
+            if (this.match("[")) {
                 atts = this.parseAttributes();
-            } else if (this.match("#")) {
+                continue;
+            }
+            if (this.match("#")) {
                 let idToken = this.tok.next();
                 if (!idToken) {
                     throw "Unexpected end of stream. ID expected.";
                 }
                 id = getText(idToken);
-            } else if (this.match("STRING")) {
-                let textToken = this.tok.next();
-                if (!textToken) {
-                    throw "Unexpected end of stream. Text expected.";
-                }
-                innerText = getText(textToken);
-            } else {
-                break;
+                continue;
             }
+            let textToken = this.match("STRING");
+            if (textToken) {
+                innerText = getText(textToken);
+                continue;
+            }
+            break;
         }
         return {
             tag: getText(tag),
