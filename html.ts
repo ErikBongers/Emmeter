@@ -6,7 +6,7 @@ import {ElementDef, EmmetNode, Parser} from "./parser";
 
 // noinspection JSUnusedGlobalSymbols
 export let emmet = {
-    create, //todo rename these 2 functions to force them the fail compilation (breaking change)
+    // create, //todo rename these 2 functions to force them the fail compilation (breaking change)
     create2,
     append,
     insertBefore,
