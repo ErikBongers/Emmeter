@@ -1,22 +1,11 @@
-import {ElementDef, emmet, EmmetNode} from "./html";
+import {ElementDef, EmmetNode} from "./parser";
 
-export function testIt(text: string) {
-    let result = emmet.test.testEmmet(text);
-    console.log(result);
-    print(result);
-    console.log();//flush output.
-}
-
-export function tokenize(text: string) {
-    return emmet.test.tokenize(text);
-}
-
-function print(node: EmmetNode) {
+export function printNode(node: EmmetNode, indent: number) {
     if("tag" in node) { //ElementDef
-        printElement(node);
+        printElement(node, indent);
         if(node.child) {
-            out("> ");
-            print(node.child);
+            out(">");
+            printNode(node.child, indent+4);
         }
         return;
     }
@@ -24,14 +13,14 @@ function print(node: EmmetNode) {
         let plus = "";
         for( let def of node.list) {
             out(plus);
-            print(def);
+            printNode(def, indent);
             plus = "+";
         }
         return;
     }
     if("count" in node) { //GroupDef
         for(let i = 0; i < node.count; i++) {
-            print(node.child);
+            printNode(node.child, indent);
         }
         return;
     }
@@ -41,8 +30,10 @@ function print(node: EmmetNode) {
     }
 }
 
-function printElement(el: ElementDef) {
-    out(` ${el.tag} `);
+function printElement(el: ElementDef, indent: number) {
+    outNewLine(`${el.tag}`, indent);
+    out(el.id ? `#${el.id}` : "");
+    out(el.classList.length ? `.${el.classList.join(".")}` : "");
     if(el.atts.length) {
         let comma = "";
         out("[");
@@ -58,5 +49,11 @@ function printElement(el: ElementDef) {
 
 function out(text: string) {
     process.stdout.write(text);
+}
+
+function outNewLine(text: string, indent: number) {
+    process.stdout.write("\n");
+    process.stdout.write(" ".repeat(indent));
+    out(text);
 }
 
